@@ -1,3 +1,6 @@
+#!/bin/bash
+set -x 
+set -e
 
 # prompway = no
 python evaluate.py prompt_way=no append_label_length=-1
