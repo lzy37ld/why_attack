@@ -9,10 +9,10 @@ reward_lm:
 target_lm:
   debug: false
 
-data: /home/liao.629/why_attack/data/reformatted_attack.jsonl
+data: ./data/reformatted_attack.jsonl
 batch_size: 16
 append_label_length: -1
-s_p_t_dir: /home/liao.629/why_attack/s_p_t_evaluate
+s_p_t_dir: ./why_attack/s_p_t_evaluate
 prompt_way: null
 
 
