@@ -16,7 +16,6 @@ s_p_t_dir: /home/liao.629/why_attack/s_p_t_evaluate
 prompt_way: null
 
 
-
 # reward_lm:
 #   debug: true
 #   model_name: gpt2
