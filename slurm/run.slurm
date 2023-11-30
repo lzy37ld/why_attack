@@ -8,4 +8,5 @@
 #SBATCH --output=%x-%j.out           # output file name
 
 
-srun --jobid $SLURM_JOBID bash -c 'bash run_gcg_individual_other_lzy.sh llama2 behaviors $((offset+9))'
+# sbatch slurm/run.slurm
+srun --jobid $SLURM_JOBID bash -c 'bash run_cli.sh'
