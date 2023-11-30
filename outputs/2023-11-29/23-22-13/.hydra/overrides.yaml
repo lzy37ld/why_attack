@@ -1,0 +1,3 @@
+- prompt_way=no
+- append_label_length=-1
+- target_lm.generation_configs.do_sample=True
