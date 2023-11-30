@@ -7,10 +7,11 @@ from reward_target_lm import create_reward,create_targetlm
 from torch.utils.data import DataLoader
 import jsonlines
 import os
-from rlprompt.utils.utils import colorful_print
 from tqdm import tqdm
 from pathlib import Path
 from accelerate.utils import set_seed
+from print_color import print
+
 set_seed(42)
 
 def attack_collate_fn(batch):
@@ -62,7 +63,7 @@ def main(config: "DictConfig"):
     with jsonlines.open(config.data) as reader:
         for line in reader:
             all_unique_qs_datas.append(line)
-    colorful_print(OmegaConf.to_yaml(config), fg='red')
+    print(OmegaConf.to_yaml(config), color='red')
     
     prompt_model_tokenizer = None
     if config.append_label_length != -1:

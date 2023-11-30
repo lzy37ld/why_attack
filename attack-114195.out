@@ -1,0 +1,8 @@
++ set -e
++ python evaluate.py prompt_way=no append_label_length=-1
+[2023-11-29 20:16:36,872] [INFO] [real_accelerator.py:158:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+/users/PAA0201/lzy37ld/miniconda3/lib/python3.11/site-packages/transformers/deepspeed.py:23: FutureWarning: transformers.deepspeed module is deprecated and will be removed in a future version. Please import deepspeed modules directly from transformers.integrations
+  warnings.warn(
+srun: Job step aborted: Waiting up to 32 seconds for job step to finish.
+slurmstepd: error: *** JOB 114195 ON a0010 CANCELLED AT 2023-11-29T20:16:39 ***
+slurmstepd: error: *** STEP 114195.0 ON a0010 CANCELLED AT 2023-11-29T20:16:39 ***
