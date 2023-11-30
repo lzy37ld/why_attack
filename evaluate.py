@@ -59,7 +59,6 @@ def main(config: "DictConfig"):
     assert existed_lines == 0, "delete it"
 
     all_unique_qs_datas = []
-    all_qs = []
     with jsonlines.open(config.data) as reader:
         for line in reader:
             all_unique_qs_datas.append(line)
