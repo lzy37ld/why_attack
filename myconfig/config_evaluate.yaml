@@ -1,3 +1,9 @@
+hydra:
+  output_subdir: null
+  run:
+    # current dir when you read this file..
+    dir: ./
+
 defaults:
   - reward_lm: reward_lm
   - target_lm: target_lm
@@ -12,7 +18,7 @@ target_lm:
 data: ./data/reformatted_attack.jsonl
 batch_size: 16
 append_label_length: -1
-s_p_t_dir: ./why_attack/s_p_t_evaluate
+s_p_t_dir: ./s_p_t_evaluate
 prompt_way: null
 
 
