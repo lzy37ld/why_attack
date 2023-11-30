@@ -84,6 +84,7 @@ def evaluate_fn(prompt_model_tokenizer,reward_lm_fn,target_lm_fn,all_unique_qs_d
             batch = attack_collate_fn(batch)
             label_s = batch["target"]
             file_s = batch["file"]
+            loss_s = batch["loss"]
             q_s = batch["q"]
             if config.prompt_way == "own":
                 p_s = batch["p"]
@@ -106,7 +107,7 @@ def evaluate_fn(prompt_model_tokenizer,reward_lm_fn,target_lm_fn,all_unique_qs_d
             reward_scores = reward_scores.cpu().tolist()
 
             for i in range(len(reward_scores)):
-                fp.write(dict(q = q_s[i],p = p_s[i],target_lm_generation = target_lm_generations[i],reward = reward_scores[i],harm = 1 if reward_scores[i] > 0 else 0,target = label_s[i],file = file_s[i]))
+                fp.write(dict(q = q_s[i],p = p_s[i],target_lm_generation = target_lm_generations[i],reward = reward_scores[i],harm = 1 if reward_scores[i] > 0 else 0,loss = loss_s[i],target = label_s[i],file = file_s[i]))
             
             progress.update(config.batch_size)
 

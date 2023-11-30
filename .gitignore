@@ -3,3 +3,4 @@
 outputs/
 s_p_t_evaluate/
 .hydra/
+*log
