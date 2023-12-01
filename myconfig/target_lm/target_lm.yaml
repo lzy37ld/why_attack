@@ -7,7 +7,7 @@ system_message: "You are a helpful, respectful and honest assistant. Always answ
 
 
 generation_configs:
-  do_sample: True
+  do_sample: false
   max_new_tokens: 60
   num_return_sequences: 1
   top_p: 0.7
