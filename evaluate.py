@@ -50,7 +50,11 @@ def do_reps(
 def main(config: "DictConfig"):
     Path(config.s_p_t_dir).mkdir(exist_ok= True, parents= True)
 
-    path = os.path.join(config.s_p_t_dir,f"promptway_{config.prompt_way}|targetlm_do_sample_{config.target_lm.generation_configs.do_sample}|append_label_length_{config.append_label_length}.jsonl")
+    s_p_t_dir = config.s_p_t_dir
+    s_p_t_dir = os.path.join(s_p_t_dir,f"max_new_tokens_{config.target_lm.generation_configs.max_new_tokens}")
+    Path(s_p_t_dir).mkdir(exist_ok= True, parents= True)
+
+    path = os.path.join(s_p_t_dir,f"promptway_{config.prompt_way}|targetlm_do_sample_{config.target_lm.generation_configs.do_sample}|append_label_length_{config.append_label_length}.jsonl")
 
 
     fp = jsonlines.open(path,"a")
@@ -59,24 +63,23 @@ def main(config: "DictConfig"):
     assert existed_lines == 0, "delete it"
 
     all_unique_qs_datas = []
-    all_qs = []
     with jsonlines.open(config.data) as reader:
         for line in reader:
             all_unique_qs_datas.append(line)
     print(OmegaConf.to_yaml(config), color='red')
     
-    prompt_model_tokenizer = None
+    target_model_tokenizer = None
     if config.append_label_length != -1:
         # only for selecting tokens at the front
-        prompt_model_tokenizer = set_pad_token(AutoTokenizer.from_pretrained(config.target_lm.model_name,padding_side = "right"))
+        target_model_tokenizer = set_pad_token(AutoTokenizer.from_pretrained(config.target_lm.model_name,padding_side = "right"))
     reward_lm_fn = create_reward(config)
     target_lm_fn = create_targetlm(config)
-    evaluate_fn(prompt_model_tokenizer,reward_lm_fn,target_lm_fn,all_unique_qs_datas,config,fp)
+    evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,all_unique_qs_datas,config,fp)
 
 
 
 @torch.no_grad()
-def evaluate_fn(prompt_model_tokenizer,reward_lm_fn,target_lm_fn,all_unique_qs_datas,config,fp):
+def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,all_unique_qs_datas,config,fp):
 
     with tqdm(total=len(all_unique_qs_datas)) as progress:
             
@@ -99,15 +102,15 @@ def evaluate_fn(prompt_model_tokenizer,reward_lm_fn,target_lm_fn,all_unique_qs_d
 
             label_s_tokens_decode = None
             if config.append_label_length != -1 and config.prompt_way != "model":
-                label_s_tokens = prompt_model_tokenizer(label_s,padding = True,return_tensors = "pt",add_special_tokens = False).input_ids[:,:config.append_label_length]
-                label_s_tokens_decode = prompt_model_tokenizer.batch_decode(label_s_tokens,skip_special_tokens = True)
+                label_s_tokens = target_model_tokenizer(label_s,padding = True,return_tensors = "pt",add_special_tokens = False).input_ids[:,:config.append_label_length]
+                label_s_tokens_decode = target_model_tokenizer.batch_decode(label_s_tokens,skip_special_tokens = True)
 
             target_lm_generations = target_lm_fn(q_s,p_s,after_sys_tokens = label_s_tokens_decode)
             reward_scores = reward_lm_fn(q_s,target_lm_generations)
             reward_scores = reward_scores.cpu().tolist()
 
             for i in range(len(reward_scores)):
-                fp.write(dict(q = q_s[i],p = p_s[i],target_lm_generation = target_lm_generations[i],reward = reward_scores[i],harm = 1 if reward_scores[i] > 0 else 0,loss = loss_s[i],target = label_s[i],file = file_s[i]))
+                fp.write(dict(q = q_s[i],p = p_s[i],target_lm_generation = target_lm_generations[i],reward = reward_scores[i],loss = loss_s[i],target = label_s[i],file = file_s[i]))
             
             progress.update(config.batch_size)
 

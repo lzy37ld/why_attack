@@ -15,12 +15,13 @@ reward_lm:
 target_lm:
   debug: false
 
-data: ./data/reformatted_attack.jsonl
+data: './s_p_t_evaluate/promptway_own|targetlm_do_sample_False|append_label_length_-1.jsonl'
 batch_size: 16
 append_label_length: -1
 s_p_t_dir: ./s_p_t_evaluate
 rank_dir: ./rank_evaluate
 prompt_way: own
+
 
 
 # target_lm:

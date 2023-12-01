@@ -136,7 +136,7 @@ def create_targetlm(config):
                 kwargs = check_torch_dtype(config)
 
                 model = AutoModelForCausalLM.from_pretrained(model_name, **kwargs,**device_map)
-                tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False)
+                tokenizer = AutoTokenizer.from_pretrained(model_name)
                 tokenizer.padding_side = "left"
                 if not tokenizer.pad_token:
                     tokenizer.pad_token = tokenizer.eos_token
