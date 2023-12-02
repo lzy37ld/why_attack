@@ -65,7 +65,7 @@ def main(args):
 			q_s.append(line["q"])
 			harm_scores.append(line["reward"])
 			target_lm_generations.append(line["target_lm_generation"])
-			q_s_harm[line["q"]]["harm_scores"].append(line["harm"])
+			q_s_harm[line["q"]]["harm_scores"].append(line["reward"])
 			q_s_harm[line["q"]]["target_lm_generations"].append(line["target_lm_generation"])
 
 	all_harms = deter_if_harm(harm_scores,target_lm_generations,args)
