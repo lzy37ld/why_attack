@@ -47,5 +47,7 @@ python evaluate.py prompt_own=own append_label_length=6 target_lm.generation_con
 
 
 
+
+
 python check_tokens.py data="'/home/liao.629/why_attack/s_p_t_evaluate/promptway_own|targetlm_do_sample_False|append_label_length_-1.jsonl'"
 python check_tokens.py data="'/home/liao.629/why_attack/s_p_t_evaluate/promptway_no|targetlm_do_sample_False|append_label_length_-1.jsonl'"

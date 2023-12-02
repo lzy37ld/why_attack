@@ -9,4 +9,4 @@
 
 
 # sbatch slurm/run.slurm
-srun --jobid $SLURM_JOBID bash -c 'bash run_cli.sh'
+srun --jobid $SLURM_JOBID bash -c 'bash tmp.sh'
