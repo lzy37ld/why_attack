@@ -21,7 +21,7 @@ append_label_length: -1
 s_p_t_dir: ./s_p_t_evaluate
 rank_dir: ./rank_evaluate
 prompt_way: own
-
+multi: 0
 
 # target_lm:
 #   debug: true
