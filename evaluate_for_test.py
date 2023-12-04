@@ -70,7 +70,7 @@ def main(config: "DictConfig"):
     config.data = "./test.json"
     check_steps_after = 250
     all_unique_qs_datas = []
-    with open(config.data) as f:
+    with open(config.data,encoding = "uft-8") as f:
         test_datas = json.load(f)
     for key in test_datas:
         if int(key.replace("step_","")) < check_steps_after:
