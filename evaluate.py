@@ -48,6 +48,8 @@ def do_reps(
 
 @hydra.main(config_path="./myconfig", config_name="config_evaluate")
 def main(config: "DictConfig"):
+    config.reward_lm.batch_size = config.batch_size
+    config.target_lm.batch_size = config.batch_size
     Path(config.s_p_t_dir).mkdir(exist_ok= True, parents= True)
 
     s_p_t_dir = config.s_p_t_dir
