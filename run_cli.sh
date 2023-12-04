@@ -81,7 +81,7 @@ python evaluate.py prompt_way=own append_label_length=6 target_lm.generation_con
 
 
 # evaluate_for_test.py
-python evaluate.py prompt_way=own
+python evaluate_for_test.py prompt_way=own
 
 
 
