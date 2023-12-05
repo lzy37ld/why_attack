@@ -6,7 +6,7 @@ hydra:
 
 defaults:
   - reward_lm: reward_lm
-  - target_lm: target_lm
+  - target_lm: llama2
   - _self_
 
 

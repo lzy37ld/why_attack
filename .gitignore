@@ -6,3 +6,4 @@ s_p_t_evaluate/
 *log
 rank_evaluate/
 __pycache__/
+*checkpoint*/
