@@ -53,7 +53,7 @@ def main(config: "DictConfig"):
     Path(config.s_p_t_dir).mkdir(exist_ok= True, parents= True)
 
     s_p_t_dir = config.s_p_t_dir
-    s_p_t_dir = os.path.join(s_p_t_dir,f"multi_{config.multi}|max_new_tokens_{config.target_lm.generation_configs.max_new_tokens}")
+    s_p_t_dir = os.path.join(s_p_t_dir,f"test|{config.target_lm.show_name}|max_new_tokens_{config.target_lm.generation_configs.max_new_tokens}")
     Path(s_p_t_dir).mkdir(exist_ok= True, parents= True)
 
     path = os.path.join(s_p_t_dir,f"promptway_{config.prompt_way}|targetlm_do_sample_{config.target_lm.generation_configs.do_sample}|append_label_length_{config.append_label_length}.jsonl")
