@@ -131,7 +131,7 @@ def create_targetlm(config):
                 super().__init__()
                 model_name = config.model_name
                 self.template = config.template
-                self.template = self.template.format(system = config.system_message, input = "{input}", prompt = "{prompt}")
+                self.template = self.template.format(system_message = config.system_message, input = "{input}", prompt = "{prompt}")
                 self.batch_size = config.batch_size
                 kwargs = check_torch_dtype(config)
 
