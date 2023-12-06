@@ -48,6 +48,10 @@ def deter_if_harm(harm_scores,target_lm_generations,args):
 	
 	is_harm = [a & b for a, b in zip(harm_scores, harm_ems)]
 	if args.determine_way == "all":
+		# purpose of printing lm_generations
+		# for i,_ in enumerate(is_harm):
+		# 	if _ > 0:
+		# 		print(target_lm_generations[i])
 		return is_harm
 	
 	raise NotImplementedError()
