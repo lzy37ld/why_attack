@@ -92,7 +92,7 @@ def main(args):
 	Path(args.save_dir).mkdir(exist_ok= True, parents= True)
 	with open(os.path.join(args.save_dir,f"{args.determine_way}|{args.path.split('/')[-1]}"),"w") as f:
 		json.dump(dict(asr_over_all_instances = round(sum(all_harms)/len(all_harms),2),
-			 		asr_over_all_qs = round(sum(all_harms_over_qs)/len(all_harms_over_qs),2)),f)
+			 		asr_over_all_qs = round(sum(all_harms_over_qs)/len(all_harms_over_qs),4)),f)
 
 
 
