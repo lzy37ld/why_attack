@@ -7,3 +7,4 @@ s_p_t_evaluate/
 rank_evaluate/
 __pycache__/
 *checkpoint*/
+vicuna*/
