@@ -12,6 +12,7 @@ from pathlib import Path
 from accelerate.utils import set_seed
 from print_color import print
 import json
+import time
 
 set_seed(42)
 
@@ -49,6 +50,7 @@ def do_reps(
 
 @hydra.main(config_path="./myconfig", config_name="config_evaluate")
 def main(config: "DictConfig"):
+    start_time = time.time()
     Path(config.s_p_t_dir).mkdir(exist_ok= True, parents= True)
 
     config.reward_lm.batch_size = config.batch_size
@@ -57,11 +59,13 @@ def main(config: "DictConfig"):
     s_p_t_dir = config.s_p_t_dir
     s_p_t_dir = os.path.join(s_p_t_dir,f"{config.target_lm.show_name}|max_new_tokens_{config.target_lm.generation_configs.max_new_tokens}")
     Path(s_p_t_dir).mkdir(exist_ok= True, parents= True)
-
-    path = os.path.join(s_p_t_dir,f"offset_{config.offset}|promptway_{config.prompt_way}|targetlm_do_sample_{config.target_lm.generation_configs.do_sample}|append_label_length_{config.append_label_length}.jsonl")
-    with open(path) as f:
-        existed_lines = len(f.readlines())
-    assert existed_lines == 0
+    try:
+        path = os.path.join(s_p_t_dir,f"offset_{config.offset}|promptway_{config.prompt_way}|targetlm_do_sample_{config.target_lm.generation_configs.do_sample}|append_label_length_{config.append_label_length}.jsonl")
+        with open(path) as f:
+            existed_lines = len(f.readlines())
+        assert existed_lines == 0
+    except:
+        pass
     # assert existed_lines == 0, "delete it"
     data_path = os.path.join(config.data_dir,config.data_prefix.format(offset = config.offset))
     with open(data_path) as f:
@@ -102,6 +106,12 @@ def main(config: "DictConfig"):
     reward_lm_fn = create_reward(config)
     target_lm_fn = create_targetlm(config)
     evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,processed_data,config,fp)
+    end_time = time.time()
+
+    # 计算运行时间
+    elapsed_time = end_time - start_time
+
+    print(f"函数运行时间：{elapsed_time}秒")
 
 
 
@@ -122,7 +132,6 @@ def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,processed_data,
                 tmp["step"] = step
                 all_unique_qs_datas.append(tmp)
 
-        all_unique_qs_datas = all_unique_qs_datas[:50]
 
         with tqdm(all_unique_qs_datas, total=len(all_unique_qs_datas),desc="instances iteration",leave= False) as progress_instances:
                 
