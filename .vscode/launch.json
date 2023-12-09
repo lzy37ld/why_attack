@@ -5,6 +5,17 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
+			"name": "evaluate for test.py",
+			"type": "python",
+			"request": "launch",
+			"program": "${file}",
+			"console": "integratedTerminal",
+			"justMyCode": true,
+			"args": [
+				"offset=510"
+			]
+		},
+		{
 			"name": "check tokens.py",
 			"type": "python",
 			"request": "launch",
@@ -12,8 +23,8 @@
 			"console": "integratedTerminal",
 			"justMyCode": false,
 			"env": {
-				"CUDA_DEVICE_ORDER":"PCI_BUS_ID",
-				"CUDA_VISIBLE_DEVICES":"0",
+				"CUDA_DEVICE_ORDER": "PCI_BUS_ID",
+				"CUDA_VISIBLE_DEVICES": "0",
 			},
 		},
 		{

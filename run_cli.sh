@@ -81,9 +81,8 @@ python evaluate.py prompt_way=own append_label_length=6 target_lm.generation_con
 
 
 # evaluate_for_test.py
-python evaluate_for_test.py prompt_way=own batch_size=48 target_lm=llama2
-python evaluate_for_test.py prompt_way=own batch_size=48 target_lm=yi
-python evaluate_for_test.py prompt_way=own batch_size=48 target_lm=deepseek
+python evaluate_for_each_instances.py prompt_way=own batch_size=48 target_lm=llama2 offset=?
+
 
 
 

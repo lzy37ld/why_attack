@@ -15,13 +15,18 @@ reward_lm:
 target_lm:
   debug: false
 
-data: ./data/reformatted_attack.jsonl
+data_dir: results_n_steps_500
+data_prefix: individual_behaviors_llama2_gcg_offset{offset}.json
+offset: null
+
 batch_size: 16
 append_label_length: -1
 s_p_t_dir: ./s_p_t_evaluate
 rank_dir: ./rank_evaluate
 prompt_way: own
-multi: 0
+
+
+
 
 # target_lm:
 #   debug: true
