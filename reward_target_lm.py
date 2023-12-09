@@ -159,8 +159,10 @@ def create_targetlm(config):
                         # space here is important!!
                         batch = [batch[i] + " " + self.after_sys_tokens[i] for i in range(len(batch))]
                     print(batch[0])
+                    print(self.tokenizer.decode(self.tokenizer.encode(batch[0])))
+                    print("Add special tokens should be True")
                     try:
-                        input_ids = self.tokenizer(batch, return_tensors='pt',padding= True, add_special_tokens= False).to(device)
+                        input_ids = self.tokenizer(batch, return_tensors='pt',padding= True).to(device)
                         output = self.model.generate(**input_ids,generation_config = self.gen_config)
                         output = output[:,input_ids["input_ids"].shape[-1]:]
                         output_text = self.tokenizer.batch_decode(output,skip_special_tokens= True)   
@@ -169,7 +171,7 @@ def create_targetlm(config):
                         print("run one by one")
                         single_outputs_l = []
                         for single_batch in batch:
-                            input_ids = self.tokenizer(single_batch, return_tensors='pt',padding= True, add_special_tokens= False).to(device)
+                            input_ids = self.tokenizer(single_batch, return_tensors='pt',padding= True).to(device)
                             output = self.model.generate(**input_ids,generation_config = self.gen_config)
                             output = output[:,input_ids["input_ids"].shape[-1]:]
                             output_text = self.tokenizer.batch_decode(output,skip_special_tokens= True)   

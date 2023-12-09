@@ -117,6 +117,9 @@ class Target_Model(nn.Module):
                 encoded_batch_suffix_tokens = encoded_batch_suffix_tokens.input_ids
 
             print(batch[0])
+            print(self.tokenizer.decode(self.tokenizer.encode(batch[0])))
+            print("Add special tokens should be True")
+            
             input_ids = self.tokenizer(batch, return_tensors='pt',padding= True).to(device)
             logits = self.model(**input_ids).logits
             assert logits.shape[0] == len(batch_suffix_tokens)
