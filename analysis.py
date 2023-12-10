@@ -76,11 +76,14 @@ def main(args):
 			
 				
 	all_harms_over_qs = []
+	print('len(q_s_harm)',len(q_s_harm))
 	for q in q_s_harm:
+		print(len(q_s_harm[q]["harm_scores"]))
 		q_harms = deter_if_harm(q_s_harm[q]["harm_scores"],q_s_harm[q]["target_lm_generations"],args)
 		if any(q_harms):
 			all_harms_over_qs.append(1)
 		else:
+			print(q)
 			all_harms_over_qs.append(0)
 
 

@@ -8,3 +8,4 @@ rank_evaluate/
 __pycache__/
 *checkpoint*/
 vicuna*/
+analysis/
