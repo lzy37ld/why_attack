@@ -82,7 +82,7 @@ python evaluate.py prompt_way=own append_label_length=6 target_lm.generation_con
 
 # evaluate_for_test.py
 python evaluate_for_each_instances.py prompt_way=own batch_size=48 target_lm=llama2-chat offset=?
-python evaluate_for_each_instances.py prompt_way=own batch_size=8 offset=0 data_dir="./vicuna_tests" data_prefix="individual_behaviors_vicuna_gcg_offset\{offset\}.json" target_lm=vicuna-chat
+python evaluate_for_each_instances.py prompt_way=own batch_size=48 offset=0 data_dir=results_n_steps_500_vicuna data_prefix="individual_behaviors_vicuna_gcg_offset\{offset\}.json" target_lm=vicuna-chat
 
 
 
