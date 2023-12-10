@@ -68,11 +68,11 @@ def main(config: "DictConfig"):
         pass
     # assert existed_lines == 0, "delete it"
     data_path = os.path.join(config.data_dir,config.data_prefix.format(offset = config.offset))
-    with open(data_path) as f:
-        lines = len(f.readlines())
-    if lines != 5140113:
-        print("GCG is still going")
-        exit(1)
+    # with open(data_path) as f:
+    #     lines = len(f.readlines())
+    # if lines != 5140113:
+    #     print("GCG is still going")
+    #     exit(1)
 
 
     fp = jsonlines.open(path,"a")
