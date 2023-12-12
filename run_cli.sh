@@ -131,4 +131,5 @@ torchrun --nproc_per_node=4 --master_port=1234 train_prompter.py \
     --tf32 True \
 	--report_to wandb \
 	--prompt_type $prompt_type \
-	--train_ratio $train_ratio
+	--train_ratio $train_ratio \
+    --data_path 'data/vicuna_process_100.json'
