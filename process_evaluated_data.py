@@ -74,7 +74,7 @@ def read_and_dedup(path):
             for q,p,loss,reward,target_lm_generation,is_harm in results:
                 if is_harm:
                     if (q,p) not in unique_lines:
-                        unique_lines.add((q,p))  # 保留具有唯一值的行的索引
+                        unique_lines.add((q,p,target_lm_generation))  # 保留具有唯一值的行的索引
                         datas.append(dict(q = q,p = p, loss = loss, reward = reward, target_lm_generation = target_lm_generation))
     return datas
 
@@ -100,7 +100,7 @@ args = SimpleNamespace(**args)
 
 path_template = "/home/liao.629/why_attack/s_p_t_evaluate/vicuna-7b-chat-v1.5|max_new_tokens_60/offset_{offset}|promptway_own|targetlm_do_sample_False|append_label_length_-1.jsonl"
 q_dict_list = []
-n_sample = 2000
+n_sample = 100
 for offset in range(0,510,10):
     path = path_template.format(offset = offset)
     q_dict = get_q_dict(read_and_dedup(path),n_sample = n_sample)
@@ -109,5 +109,5 @@ for offset in range(0,510,10):
 
 combined_dict = {key: value for d in q_dict_list for key, value in d.items()}
 import json
-with open("data/vicuna_process_2000.json","w") as f:
+with open(f"data/vicuna_process_{n_sample}.json","w") as f:
     json.dump(combined_dict,f)
