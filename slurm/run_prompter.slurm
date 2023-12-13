@@ -8,7 +8,7 @@
 #SBATCH --output=%x-%j.out                       # output file name
 #SBATCH --mail-type=ALL                          # send email for all notifications
 #SBATCH --mail-user=lzy37ld@gmail.com       # your email
-#SBATCH --mem=3150G
+#SBATCH --mem=300G
 
 # sbatch slurm/run.slurm
 srun --jobid $SLURM_JOBID bash -c 'bash tmp_prompter.sh'

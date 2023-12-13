@@ -4,6 +4,9 @@ set -e
 
 export WANDB_ENTITY=lzy37ld
 export WANDB_PROJECT=attack_prompter
+prompt_type="q_r_p"
+train_ratio=0.8
+export WANDB_NAME=vicuna_${prompt_type}_train_ratio_${train_ratio}
 
 base_ckpt=$WHY_ATTACK_CKPT
 base_data=$WHY_ATTACK_DATA
@@ -16,10 +19,8 @@ if [ -z "$base_data" ]; then
     base_data='.'
 fi
 
-output_dir=$base_ckpt/prompter_ckpt/
-prompt_type="q_r_p"
-train_ratio=0.6
-export WANDB_NAME=${prompt_type}_train_ratio_${train_ratio}
+output_dir=$base_ckpt/prompter_vicuna_ckpt/
+
 
 
 torchrun --nproc_per_node=4 --master_port=1234 train_prompter.py \
@@ -33,7 +34,7 @@ torchrun --nproc_per_node=4 --master_port=1234 train_prompter.py \
     --gradient_accumulation_steps 2 \
     --evaluation_strategy 'no' \
     --save_strategy 'steps' \
-    --save_steps 1000 \
+    --save_steps 2000 \
     --learning_rate 2e-5 \
     --weight_decay 0. \
     --warmup_ratio 0.03 \
