@@ -108,7 +108,7 @@ export WANDB_NAME=${prompt_type}_train_ratio_${train_ratio}
 
 
 torchrun --nproc_per_node=4 --master_port=1234 train_prompter.py \
-    --model_name_or_path "meta-llama/Llama-2-7b-hf \
+    --model_name_or_path meta-llama/Llama-2-7b-hf \
     --data_path data/vicuna_process_100.json \
     --bf16 True \
     --output_dir $output_dir \
@@ -116,9 +116,9 @@ torchrun --nproc_per_node=4 --master_port=1234 train_prompter.py \
     --per_device_train_batch_size 4 \
     --per_device_eval_batch_size 4 \
     --gradient_accumulation_steps 8 \
-    --evaluation_strategy "steps" \
-	--eval_steps 50
-    --save_strategy "steps" \
+    --evaluation_strategy 'steps' \
+	--eval_steps 50 \
+    --save_strategy 'steps' \
     --save_steps 50 \
     --save_total_limit 1 \
     --learning_rate 2e-5 \
@@ -131,5 +131,4 @@ torchrun --nproc_per_node=4 --master_port=1234 train_prompter.py \
     --tf32 True \
 	--report_to wandb \
 	--prompt_type $prompt_type \
-	--train_ratio $train_ratio \
-    --data_path 'data/vicuna_process_100.json'
+	--train_ratio $train_ratio
