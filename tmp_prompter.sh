@@ -23,7 +23,7 @@ output_dir=$base_ckpt/prompter_vicuna_ckpt/
 
 
 
-torchrun --nproc_per_node=4 --master_port=1234 train_prompter.py \
+torchrun --nproc_per_node=8 --master_port=1234 train_prompter.py \
     --model_name_or_path meta-llama/Llama-2-7b-hf \
     --data_path data/vicuna_process_100.json \
     --bf16 True \
