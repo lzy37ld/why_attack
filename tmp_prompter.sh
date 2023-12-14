@@ -32,9 +32,12 @@ torchrun --nproc_per_node=4 --master_port=1234 train_prompter.py \
     --per_device_train_batch_size 1 \
     --per_device_eval_batch_size 4 \
     --gradient_accumulation_steps 2 \
-    --evaluation_strategy 'no' \
+    --load_best_model_at_end True \
+    --save_total_limit 2 \
+    --evaluation_strategy 'steps' \
+    --eval_steps 3000 \
     --save_strategy 'steps' \
-    --save_steps 2000 \
+    --save_steps 3000 \
     --learning_rate 2e-5 \
     --weight_decay 0. \
     --warmup_ratio 0.03 \
