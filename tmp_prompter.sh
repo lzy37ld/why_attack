@@ -22,8 +22,51 @@ fi
 output_dir=$base_ckpt/prompter_vicuna_ckpt/
 
 
+echo "for ascend, pls use nproc_per_node = 4"
+echo "for ascend, pls use nproc_per_node = 4"
+echo "for ascend, pls use nproc_per_node = 4"
+echo "for ascend, pls use nproc_per_node = 4"
+echo "for ascend, pls use nproc_per_node = 4"
+echo "for ascend, pls use nproc_per_node = 4"
+echo "for ascend, pls use nproc_per_node = 4"
+echo "for ascend, pls use nproc_per_node = 4"
+echo "for ascend, pls use nproc_per_node = 4"
+echo "for ascend, pls use nproc_per_node = 4"
+echo "for ascend, pls use nproc_per_node = 4"
 
-torchrun --nproc_per_node=4 --master_port=1234 train_prompter.py \
+# ********************************************************************************************************************************************
+# torchrun --nproc_per_node=8 --master_port=1234 train_prompter.py \
+#     --model_name_or_path meta-llama/Llama-2-7b-hf \
+#     --data_path data/vicuna_process_100.json \
+#     --bf16 True \
+#     --output_dir $output_dir \
+#     --num_train_epochs 3 \
+#     --per_device_train_batch_size 1 \
+#     --per_device_eval_batch_size 4 \
+#     --gradient_accumulation_steps 2 \
+#     --load_best_model_at_end True \
+#     --save_total_limit 2 \
+#     --evaluation_strategy 'steps' \
+#     --eval_steps 3000 \
+#     --save_strategy 'steps' \
+#     --save_steps 3000 \
+#     --learning_rate 5e-5 \
+#     --weight_decay 0. \
+#     --warmup_ratio 0.03 \
+#     --lr_scheduler_type "cosine" \
+#     --logging_steps 1 \
+#     --fsdp "full_shard auto_wrap" \
+#     --fsdp_transformer_layer_cls_to_wrap 'LlamaDecoderLayer' \
+#     --tf32 True \
+# 	--report_to wandb \
+# 	--prompt_type $prompt_type \
+# 	--train_ratio $train_ratio
+
+# ********************************************************************************************************************************************
+# no evaluation
+echo "no evaluation"
+
+torchrun --nproc_per_node=8 --master_port=1234 train_prompter.py \
     --model_name_or_path meta-llama/Llama-2-7b-hf \
     --data_path data/vicuna_process_100.json \
     --bf16 True \
@@ -32,13 +75,11 @@ torchrun --nproc_per_node=4 --master_port=1234 train_prompter.py \
     --per_device_train_batch_size 1 \
     --per_device_eval_batch_size 4 \
     --gradient_accumulation_steps 2 \
-    --load_best_model_at_end True \
     --save_total_limit 2 \
-    --evaluation_strategy 'steps' \
-    --eval_steps 3000 \
+    --evaluation_strategy 'no' \
     --save_strategy 'steps' \
-    --save_steps 3000 \
-    --learning_rate 2e-5 \
+    --save_steps 2500 \
+    --learning_rate 5e-5 \
     --weight_decay 0. \
     --warmup_ratio 0.03 \
     --lr_scheduler_type "cosine" \
@@ -49,31 +90,3 @@ torchrun --nproc_per_node=4 --master_port=1234 train_prompter.py \
 	--report_to wandb \
 	--prompt_type $prompt_type \
 	--train_ratio $train_ratio
-
-
-# torchrun --nproc_per_node=4 --master_port=1234 train_prompter.py \
-#     --model_name_or_path meta-llama/Llama-2-7b-hf \
-#     --data_path data/vicuna_process_100.json \
-#     --bf16 True \
-#     --output_dir $output_dir \
-#     --num_train_epochs 3 \
-#     --per_device_train_batch_size 4 \
-#     --per_device_eval_batch_size 4 \
-#     --gradient_accumulation_steps 8 \
-#     --evaluation_strategy 'steps' \
-# 	  --eval_steps 50 \
-#     --save_strategy 'steps' \
-#     --save_steps 50 \
-#     --save_total_limit 1 \
-#     --learning_rate 2e-5 \
-#     --weight_decay 0. \
-#     --warmup_ratio 0.03 \
-#     --lr_scheduler_type "cosine" \
-#     --logging_steps 1 \
-#     --fsdp "full_shard auto_wrap" \
-#     --fsdp_transformer_layer_cls_to_wrap 'LlamaDecoderLayer' \
-#     --tf32 True \
-# 	  --report_to wandb \
-# 	  --prompt_type $prompt_type \
-# 	  --train_ratio $train_ratio \
-#     --data_path 'data/vicuna_process_100.json'

@@ -23,8 +23,8 @@ import transformers
 from torch.utils.data import Dataset
 from transformers import Trainer
 import json
-from accelerate.utils import set_seed
-set_seed(42)
+# from accelerate.utils import set_seed
+# set_seed(42)
 
 IGNORE_INDEX = -100
 DEFAULT_PAD_TOKEN = "[PAD]"
@@ -206,7 +206,7 @@ def train():
 
     model = transformers.AutoModelForCausalLM.from_pretrained(
         model_args.model_name_or_path,
-        cache_dir=training_args.cache_dir,
+        cache_dir=training_args.cache_dir
     )
 
     tokenizer = transformers.AutoTokenizer.from_pretrained(
