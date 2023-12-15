@@ -20,7 +20,7 @@ if [ -z "$base_data" ]; then
     base_data='.'
 fi
 
-output_dir=$base_ckpt/prompter_vicuna_ckpt_${model_name}/
+output_dir=$base_ckpt/prompter_vicuna_ckpt_${model_name}_${prompt_type}/
 
 
 # ********************************************************************************************************************************************
