@@ -11,4 +11,4 @@
 #SBATCH --mem=300G
 
 # sbatch slurm/run.slurm
-srun --jobid $SLURM_JOBID bash -c 'bash tmp_prompter.sh'
+srun --jobid $SLURM_JOBID bash -c 'bash tmp_prompter_ascend.sh'
