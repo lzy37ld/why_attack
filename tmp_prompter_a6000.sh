@@ -37,7 +37,7 @@ output_dir=$base_ckpt/prompter_vicuna_ckpt/
 #     --evaluation_strategy 'steps' \
 #     --eval_steps 3000 \
 #     --save_strategy 'steps' \
-#     --save_steps 3000 \
+#     --save_steps 2500 \
 #     --learning_rate 5e-5 \
 #     --weight_decay 0. \
 #     --warmup_ratio 0.03 \
