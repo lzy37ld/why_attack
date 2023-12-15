@@ -12,3 +12,4 @@ vicuna*/
 analysis/
 results*/
 data/
+.nfs*

@@ -34,6 +34,7 @@ output_dir=$base_ckpt/prompter_vicuna_ckpt/
 #     --gradient_accumulation_steps 2 \
 #     --load_best_model_at_end True \
 #     --save_total_limit 2 \
+#     --save_only_model True \
 #     --evaluation_strategy 'steps' \
 #     --eval_steps 3000 \
 #     --save_strategy 'steps' \
@@ -66,6 +67,7 @@ torchrun --nproc_per_node=8 --master_port=1234 train_prompter.py \
     --save_total_limit 2 \
     --evaluation_strategy 'no' \
     --save_strategy 'steps' \
+    --save_only_model True \
     --save_steps 2500 \
     --learning_rate 5e-5 \
     --weight_decay 0. \
@@ -78,3 +80,4 @@ torchrun --nproc_per_node=8 --master_port=1234 train_prompter.py \
 	--report_to wandb \
 	--prompt_type $prompt_type \
 	--train_ratio $train_ratio
+
