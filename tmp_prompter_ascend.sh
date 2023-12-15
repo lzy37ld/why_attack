@@ -22,18 +22,6 @@ fi
 output_dir=$base_ckpt/prompter_vicuna_ckpt/
 
 
-echo "for ascend, pls use nproc_per_node = 4"
-echo "for ascend, pls use nproc_per_node = 4"
-echo "for ascend, pls use nproc_per_node = 4"
-echo "for ascend, pls use nproc_per_node = 4"
-echo "for ascend, pls use nproc_per_node = 4"
-echo "for ascend, pls use nproc_per_node = 4"
-echo "for ascend, pls use nproc_per_node = 4"
-echo "for ascend, pls use nproc_per_node = 4"
-echo "for ascend, pls use nproc_per_node = 4"
-echo "for ascend, pls use nproc_per_node = 4"
-echo "for ascend, pls use nproc_per_node = 4"
-
 # ********************************************************************************************************************************************
 # torchrun --nproc_per_node=8 --master_port=1234 train_prompter.py \
 #     --model_name_or_path meta-llama/Llama-2-7b-hf \
@@ -49,7 +37,7 @@ echo "for ascend, pls use nproc_per_node = 4"
 #     --evaluation_strategy 'steps' \
 #     --eval_steps 3000 \
 #     --save_strategy 'steps' \
-#     --save_steps 3000 \
+#     --save_steps 5000 \
 #     --learning_rate 5e-5 \
 #     --weight_decay 0. \
 #     --warmup_ratio 0.03 \
@@ -66,7 +54,7 @@ echo "for ascend, pls use nproc_per_node = 4"
 # no evaluation
 echo "no evaluation"
 
-torchrun --nproc_per_node=8 --master_port=1234 train_prompter.py \
+torchrun --nproc_per_node=4 --master_port=1234 train_prompter.py \
     --model_name_or_path meta-llama/Llama-2-7b-hf \
     --data_path data/vicuna_process_100.json \
     --bf16 True \
@@ -78,7 +66,7 @@ torchrun --nproc_per_node=8 --master_port=1234 train_prompter.py \
     --save_total_limit 2 \
     --evaluation_strategy 'no' \
     --save_strategy 'steps' \
-    --save_steps 2500 \
+    --save_steps 5000 \
     --learning_rate 5e-5 \
     --weight_decay 0. \
     --warmup_ratio 0.03 \
