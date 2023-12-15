@@ -38,6 +38,9 @@ PROMPT_DICT = {
     "q_r_p": (
        "### Query:{q} ### Response:{target_lm_generation} ### Prompt:"
     ),
+    "q_p": (
+       "### Query:{q} ### Prompt:"
+    ),
 }
 
 

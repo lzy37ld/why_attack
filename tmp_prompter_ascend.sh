@@ -6,7 +6,8 @@ export WANDB_ENTITY=lzy37ld
 export WANDB_PROJECT=attack_prompter
 prompt_type="q_r_p"
 train_ratio=0.8
-export WANDB_NAME=vicuna_${prompt_type}_train_ratio_${train_ratio}
+model_name=llama2-base
+export WANDB_NAME=vicuna_${prompt_type}_train_ratio_${train_ratio}_model_name_${model_name}
 
 base_ckpt=$WHY_ATTACK_CKPT
 base_data=$WHY_ATTACK_DATA
@@ -19,7 +20,7 @@ if [ -z "$base_data" ]; then
     base_data='.'
 fi
 
-output_dir=$base_ckpt/prompter_vicuna_ckpt/
+output_dir=$base_ckpt/prompter_vicuna_ckpt_${model_name}/
 
 
 # ********************************************************************************************************************************************

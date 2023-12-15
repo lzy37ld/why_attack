@@ -4,9 +4,9 @@ set -e
 
 export WANDB_ENTITY=lzy37ld
 export WANDB_PROJECT=attack_prompter
-prompt_type="q_r_p"
+prompt_type="q_p"
 train_ratio=0.8
-model_name=llama2-base
+model_name=gpt2
 export WANDB_NAME=vicuna_${prompt_type}_train_ratio_${train_ratio}_model_name_${model_name}
 
 base_ckpt=$WHY_ATTACK_CKPT
@@ -57,12 +57,12 @@ output_dir=$base_ckpt/prompter_vicuna_ckpt_${model_name}/
 echo "no evaluation"
 
 torchrun --nproc_per_node=8 --master_port=1234 train_prompter.py \
-    --model_name_or_path meta-llama/Llama-2-7b-hf \
+    --model_name_or_path gpt2 \
     --data_path data/vicuna_process_100.json \
     --bf16 True \
     --output_dir $output_dir \
     --num_train_epochs 3 \
-    --per_device_train_batch_size 1 \
+    --per_device_train_batch_size 4 \
     --per_device_eval_batch_size 4 \
     --gradient_accumulation_steps 2 \
     --save_total_limit 2 \
@@ -76,7 +76,7 @@ torchrun --nproc_per_node=8 --master_port=1234 train_prompter.py \
     --lr_scheduler_type "cosine" \
     --logging_steps 1 \
     --fsdp "full_shard auto_wrap" \
-    --fsdp_transformer_layer_cls_to_wrap 'LlamaDecoderLayer' \
+    --fsdp_transformer_layer_cls_to_wrap 'GPT2Block' \
     --tf32 True \
 	--report_to wandb \
 	--prompt_type $prompt_type \
