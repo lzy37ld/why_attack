@@ -13,3 +13,4 @@ analysis/
 results*/
 data/
 .nfs*
+prompter_test_results/

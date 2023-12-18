@@ -5,6 +5,18 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
+			"name": "evaluate prompter",
+			"type": "python",
+			"request": "launch",
+			"program": "${file}",
+			"console": "integratedTerminal",
+			"justMyCode": true,
+			"env": {
+				"CUDA_DEVICE_ORDER":"PCI_BUS_ID",
+				"CUDA_VISIBLE_DEVICES":"1,2"
+			}
+		},
+		{
 			"name": "test saving ckpt",
 			"type": "python",
 			"request": "launch",
@@ -12,8 +24,8 @@
 			"console": "integratedTerminal",
 			"justMyCode": false,
 			"env": {
-				"CUDA_DEVICE_ORDER":"PCI_BUS_ID",
-				"CUDA_VISIBLE_DEVICES":"1,2"
+				"CUDA_DEVICE_ORDER": "PCI_BUS_ID",
+				"CUDA_VISIBLE_DEVICES": "1,2"
 			},
 			"args": [
 				"--nproc_per_node=2",

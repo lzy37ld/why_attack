@@ -75,6 +75,7 @@ def read_and_dedup(path):
                 if is_harm:
                     if (q,p) not in unique_lines:
                         unique_lines.add((q,p,target_lm_generation))  # 保留具有唯一值的行的索引
+                        考虑把target也加进去。。。
                         datas.append(dict(q = q,p = p, loss = loss, reward = reward, target_lm_generation = target_lm_generation))
     return datas
 

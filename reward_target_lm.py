@@ -215,3 +215,93 @@ def create_targetlm(config):
     return get_target_lm_generation
 
 
+
+
+
+        
+def create_prompterlm(config):
+
+    if os.environ.get("RANK", "0") == "0":
+
+        class Target_Model(nn.Module): 
+            def __init__(
+                self, 
+                config,
+                device_map
+            ): 
+                super().__init__()
+                model_name = config.model_name
+                self.batch_size = config.batch_size
+                self.template = config.template
+                kwargs = check_torch_dtype(config)
+                model = AutoModelForCausalLM.from_pretrained(model_name, **kwargs,**device_map)
+                tokenizer = AutoTokenizer.from_pretrained(model_name)
+                tokenizer.padding_side = "left"
+                if not tokenizer.pad_token:
+                    tokenizer.pad_token = tokenizer.eos_token
+                self.model = model
+                self.tokenizer= tokenizer
+                self.gen_kwargs = {"pad_token_id":self.tokenizer.pad_token_id, "eos_token_id":self.tokenizer.eos_token_id, "bos_token_id":self.tokenizer.bos_token_id}
+                
+            def create_gen_config(self,gen_config):
+                self.gen_config = GenerationConfig(**gen_config, **self.gen_kwargs)
+
+            # q_s questions, p_s prompts
+            def _targetlm_run(self, q_s, device):
+                outputs_l = []
+                batch_size = self.batch_size
+                for i in range(0,len(q_s),batch_size):    
+                    batch_inputs = q_s[i: i +batch_size]
+                    batch = [self.template.format(input = batch_inputs[index]) for index in range(len(batch_inputs))]
+                    print(batch[0])
+                    print(self.tokenizer.decode(self.tokenizer.encode(batch[0])))
+                    print("Add special tokens should be True")
+                    try:
+                        input_ids = self.tokenizer(batch, return_tensors='pt',padding= True).to(device)
+                        output = self.model.generate(**input_ids,generation_config = self.gen_config)
+                        output = output[:,input_ids["input_ids"].shape[-1]:]
+                        output_text = self.tokenizer.batch_decode(output,skip_special_tokens= True)   
+                        outputs_l.extend(output_text)
+                    except:
+                        print("run one by one")
+                        single_outputs_l = []
+                        for single_batch in batch:
+                            input_ids = self.tokenizer(single_batch, return_tensors='pt',padding= True).to(device)
+                            output = self.model.generate(**input_ids,generation_config = self.gen_config)
+                            output = output[:,input_ids["input_ids"].shape[-1]:]
+                            output_text = self.tokenizer.batch_decode(output,skip_special_tokens= True)   
+                            single_outputs_l.extend(output_text)
+                        outputs_l.extend(single_outputs_l)        
+                return outputs_l
+            
+            def targetlm_run(self, q_s, device):
+                generations = self._targetlm_run(q_s, device)
+
+                return generations
+            
+
+        device_map = {"device_map":"auto"}
+        target_model_device = "cuda:0"
+
+        target_model = Target_Model(config.prompter_lm,device_map=device_map)
+        target_model.eval()
+        target_model.requires_grad_(False)
+
+        @torch.no_grad()
+        def get_target_lm_generation(q_s,num_return_sequences = 1):
+            # q_s : questions  p_s:prompts
+
+            generation_configs = config.prompter_lm.generation_configs
+            generation_configs.num_return_sequences = num_return_sequences
+            target_model.create_gen_config(generation_configs)
+            
+            generation = target_model.targetlm_run(q_s,device = target_model_device)
+            return generation
+        
+    else:
+        get_target_lm_generation = True
+
+    return get_target_lm_generation
+
+
+
