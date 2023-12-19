@@ -95,6 +95,12 @@ python check_tokens.py data="'/home/liao.629/why_attack/s_p_t_evaluate/promptway
 
 
 
+# evaluate for prompter
+python evaluate_for_test_prompter.py target_lm=vicuna-chat target_lm.generation_configs.max_new_tokens=100
+
+
+
+
 # train prompter
 
 export WANDB_ENTITY=lzy37ld
