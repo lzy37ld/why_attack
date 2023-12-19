@@ -63,9 +63,9 @@ def main(config: "DictConfig"):
         path = os.path.join(s_p_t_dir,f"offset_{config.offset}|promptway_{config.prompt_way}|targetlm_do_sample_{config.target_lm.generation_configs.do_sample}|append_label_length_{config.append_label_length}.jsonl")
         with open(path) as f:
             existed_lines = len(f.readlines())
-        assert existed_lines == 0
+        # assert existed_lines == 0
     except:
-        pass
+        existed_lines = 0
     # assert existed_lines == 0, "delete it"
     data_path = os.path.join(config.data_dir,config.data_prefix.format(offset = config.offset))
     # with open(data_path) as f:
@@ -103,9 +103,20 @@ def main(config: "DictConfig"):
     if config.append_label_length != -1:
         # only for selecting tokens at the front
         target_model_tokenizer = set_pad_token(AutoTokenizer.from_pretrained(config.target_lm.model_name,padding_side = "right"))
+
+    # process datas, which need to be continued to be executed.
+    adv_prompt_per_step_per_instances=config.adv_prompt_per_step_per_instances
+    adv_prompt_steps_per_instances=config.adv_prompt_steps_per_instances
+    desired_steps_per_instance = (adv_prompt_steps_per_instances-only_steps_after) * adv_prompt_per_step_per_instances
+    num_of_covered_instances = existed_lines // desired_steps_per_instance
+    num_of_partialy_covered_instances_steps = existed_lines - num_of_covered_instances*desired_steps_per_instance
+    num_of_covered_d = dict(num_of_covered_instances=num_of_covered_instances,num_of_partialy_covered_instances_steps=num_of_partialy_covered_instances_steps)
+
+    # reward_lm_fn = None
+    # target_lm_fn = None
     reward_lm_fn = create_reward(config)
     target_lm_fn = create_targetlm(config)
-    evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,processed_data,config,fp)
+    evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,processed_data,num_of_covered_d,config,fp)
     end_time = time.time()
 
     # 计算运行时间
@@ -116,14 +127,21 @@ def main(config: "DictConfig"):
 
 
 @torch.no_grad()
-def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,processed_data,config,fp):
+def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,processed_data,num_of_covered_d,config,fp):
     progress_keys = tqdm(processed_data, total=len(processed_data),desc="keys iteration")
-    for key in processed_data:
+
+    for key_index,key in enumerate(processed_data):
+        if key_index < num_of_covered_d['num_of_covered_instances']:
+            progress_keys.update(1)
+            continue
+
         all_unique_qs_datas = []
         target = processed_data[key]["target"]
         steps_cands = processed_data[key]["steps_cands"]
-        for step in steps_cands:
-            for item in steps_cands[step]:
+        for step_index,step in enumerate(steps_cands):
+            for item_index,item in enumerate(steps_cands[step]):
+                if step_index * config.adv_prompt_per_step_per_instances + item_index < num_of_covered_d['num_of_partialy_covered_instances_steps']:
+                    continue
                 tmp = {}
                 tmp["target"] = target
                 tmp["q"] = key
