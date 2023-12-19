@@ -3,7 +3,7 @@ show_name: Mistral-7B-v0.1
 batch_size: 8
 torch_dtype: bf16
 template: "{input} {prompt}"
-system_message: ""
+system_message: null
 
 
 generation_configs:

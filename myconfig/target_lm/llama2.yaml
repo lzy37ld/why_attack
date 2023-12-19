@@ -2,9 +2,8 @@ model_name: meta-llama/Llama-2-7b-hf
 show_name: llama2-7b
 batch_size: 8
 torch_dtype: bf16
-
 template: "{input} {prompt}"
-system_message: ""
+system_message: null
 
 
 generation_configs:

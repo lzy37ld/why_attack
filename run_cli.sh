@@ -97,7 +97,10 @@ python check_tokens.py data="'/home/liao.629/why_attack/s_p_t_evaluate/promptway
 
 # evaluate for prompter
 python evaluate_for_test_prompter.py target_lm=vicuna-chat target_lm.generation_configs.max_new_tokens=100
+python evaluate_for_test_prompter.py target_lm=llama2-chat target_lm.generation_configs.max_new_tokens=100
 
+python evaluate_for_test_prompter.py target_lm=mistral-instruct target_lm.generation_configs.max_new_tokens=100
+python evaluate_for_test_prompter.py target_lm=llama2 target_lm.generation_configs.max_new_tokens=100
 
 
 

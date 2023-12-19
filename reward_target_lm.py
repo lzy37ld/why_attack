@@ -131,7 +131,10 @@ def create_targetlm(config):
                 super().__init__()
                 model_name = config.model_name
                 self.template = config.template
-                self.template = self.template.format(system_message = config.system_message, input = "{input}", prompt = "{prompt}")
+                if config.system_message:
+                    self.template = self.template.format(system_message = config.system_message, input = "{input}", prompt = "{prompt}")
+                else:
+                    self.template = self.template.format(input = "{input}", prompt = "{prompt}")
                 self.batch_size = config.batch_size
                 kwargs = check_torch_dtype(config)
 
@@ -223,7 +226,7 @@ def create_prompterlm(config):
 
     if os.environ.get("RANK", "0") == "0":
 
-        class Target_Model(nn.Module): 
+        class Prompter_Model(nn.Module): 
             def __init__(
                 self, 
                 config,
@@ -247,7 +250,7 @@ def create_prompterlm(config):
                 self.gen_config = GenerationConfig(**gen_config, **self.gen_kwargs)
 
             # q_s questions, p_s prompts
-            def _targetlm_run(self, q_s, device):
+            def _prompterlm_run(self, q_s, device):
                 outputs_l = []
                 batch_size = self.batch_size
                 for i in range(0,len(q_s),batch_size):    
@@ -274,34 +277,34 @@ def create_prompterlm(config):
                         outputs_l.extend(single_outputs_l)        
                 return outputs_l
             
-            def targetlm_run(self, q_s, device):
-                generations = self._targetlm_run(q_s, device)
+            def prompterlm_run(self, q_s, device):
+                generations = self._prompterlm_run(q_s, device)
 
                 return generations
             
 
         device_map = {"device_map":"auto"}
-        target_model_device = "cuda:0"
+        prompter_model_device = "cuda:0"
 
-        target_model = Target_Model(config.prompter_lm,device_map=device_map)
-        target_model.eval()
-        target_model.requires_grad_(False)
+        prompter_model = Prompter_Model(config.prompter_lm,device_map=device_map)
+        prompter_model.eval()
+        prompter_model.requires_grad_(False)
 
         @torch.no_grad()
-        def get_target_lm_generation(q_s,num_return_sequences = 1):
+        def get_prompter_lm_generation(q_s,num_return_sequences = 1):
             # q_s : questions  p_s:prompts
 
             generation_configs = config.prompter_lm.generation_configs
             generation_configs.num_return_sequences = num_return_sequences
-            target_model.create_gen_config(generation_configs)
+            prompter_model.create_gen_config(generation_configs)
             
-            generation = target_model.targetlm_run(q_s,device = target_model_device)
+            generation = prompter_model.prompterlm_run(q_s,device = prompter_model_device)
             return generation
         
     else:
-        get_target_lm_generation = True
+        get_prompter_lm_generation = True
 
-    return get_target_lm_generation
+    return get_prompter_lm_generation
 
 
 
