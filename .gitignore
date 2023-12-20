@@ -9,8 +9,9 @@ rank_evaluate/
 __pycache__/
 *checkpoint*/
 vicuna*/
-analysis/
+analysis*/
 results*/
 data/
 .nfs*
 prompter_test_results/
+stats*/

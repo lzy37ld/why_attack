@@ -17,7 +17,7 @@ target_lm:
   debug: false
 data_args:
   data_path: ./data/vicuna_process_100.json
-  prompt_type: q_r_p
+  prompt_type: null
   train_ratio: 0.8
 
 prompter_lm:

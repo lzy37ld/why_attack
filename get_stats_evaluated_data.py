@@ -76,7 +76,7 @@ def read_and_dedup(path):
                     if (q,p) not in unique_lines:
                         unique_lines.add((q,p,target_lm_generation))  # 保留具有唯一值的行的索引
                         # 考虑把target也加进去。。。
-                        带上uuid，来自哪个GCG哪个model，每一个标号，也可以直接分train_test出来，带上train test表示符号，train——test是针对query来说的。。那train test就需要针对来改一改了。。 存为两个文件？
+                        # 带上uuid，来自哪个GCG哪个model，每一个标号，也可以直接分train_test出来，带上train test表示符号，train——test是针对query来说的。。那train test就需要针对来改一改了。。 存为两个文件？
                         datas.append(dict(q = q,p = p, loss = loss, reward = reward, target_lm_generation = target_lm_generation, target = target))
     return datas
 
@@ -86,13 +86,6 @@ def get_q_dict(datas,n_sample):
         assert item["reward"] > 0
         q_dict[item["q"]].append(item)
 
-    for q in q_dict:
-        if n_sample < len(q_dict[q]):
-            q_dict[q] = random.sample(q_dict[q],n_sample)
-        else:
-            print("q_dict[q]",len(q_dict[q]))
-            print('n_sample',n_sample)
-            q_dict[q] = q_dict[q]
     return q_dict
 
 
@@ -110,6 +103,15 @@ for offset in range(0,510,10):
 
 
 combined_dict = {key: value for d in q_dict_list for key, value in d.items()}
+combined_dict_len = {}
+for key in combined_dict:
+    combined_dict_len[key] = len(combined_dict[key])
 import json
-with open(f"data/vicuna_process_{n_sample}.json","w") as f:
-    json.dump(combined_dict,f)
+import os
+import pathlib
+save_dir = "./stats_s_p_t_evaluate/vicuna-7b-chat-v1.5|max_new_tokens_60"
+pathlib.Path(save_dir).mkdir(exist_ok= True, parents= True)
+with open(os.path.join(save_dir,"stats.json"),"w") as f:
+    json.dump(combined_dict_len,f)
+
+    
