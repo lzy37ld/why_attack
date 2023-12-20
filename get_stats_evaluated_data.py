@@ -5,6 +5,9 @@ from types import SimpleNamespace
 from collections import defaultdict as ddict
 import random
 random.seed(42)
+import json
+import os
+import pathlib
 
 
 _test_prefixes = [
@@ -93,11 +96,16 @@ def get_q_dict(datas,n_sample):
 args = {'determine_way': 'all'}
 args = SimpleNamespace(**args)
 
-path_template = "/home/liao.629/why_attack/s_p_t_evaluate/vicuna-7b-chat-v1.5|max_new_tokens_60/offset_{offset}|promptway_own|targetlm_do_sample_False|append_label_length_-1.jsonl"
+path_template = "/fs/ess/PAA0201/lzy37ld/why_attack/data/s_p_t_evaluate/llama2-7b-chat|max_new_tokens_60/offset_{offset}|promptway_own|targetlm_do_sample_False|append_label_length_-1.jsonl"
 q_dict_list = []
 n_sample = 100
-for offset in range(0,510,10):
+for offset in range(0,520,10):
+
     path = path_template.format(offset = offset)
+    if not os.path.exists(path):
+        print(f"{path} not exist")
+        continue
+
     q_dict = get_q_dict(read_and_dedup(path),n_sample = n_sample)
     q_dict_list.append(q_dict)
 
@@ -106,10 +114,8 @@ combined_dict = {key: value for d in q_dict_list for key, value in d.items()}
 combined_dict_len = {}
 for key in combined_dict:
     combined_dict_len[key] = len(combined_dict[key])
-import json
-import os
-import pathlib
-save_dir = "./stats_s_p_t_evaluate/vicuna-7b-chat-v1.5|max_new_tokens_60"
+
+save_dir = "./stats_s_p_t_evaluate/llama2-7b-chat|max_new_tokens_60"
 pathlib.Path(save_dir).mkdir(exist_ok= True, parents= True)
 with open(os.path.join(save_dir,"stats.json"),"w") as f:
     json.dump(combined_dict_len,f)
