@@ -140,7 +140,7 @@ def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,processed_data,
         steps_cands = processed_data[key]["steps_cands"]
         for step_index,step in enumerate(steps_cands):
             for item_index,item in enumerate(steps_cands[step]):
-                if step_index * config.adv_prompt_per_step_per_instances + item_index < num_of_covered_d['num_of_partialy_covered_instances_steps']:
+                if key_index == num_of_covered_d['num_of_covered_instances'] and step_index * config.adv_prompt_per_step_per_instances + item_index < num_of_covered_d['num_of_partialy_covered_instances_steps']:
                     continue
                 tmp = {}
                 tmp["target"] = target
