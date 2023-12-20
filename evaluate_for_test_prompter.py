@@ -21,8 +21,11 @@ PROMPT_DICT = {
     # "q_p_r": (
     #     "### Query:{query}### Prompt:{prompt}### Response:{response}"
     # ),
-    "q_r_p": (
+    "q_target_lm_generation_p": (
        "### Query:{q} ### Response:{target_lm_generation} ### Prompt:"
+    ),
+    "q_target_p": (
+       "### Query:{q} ### Response:{target} ### Prompt:"
     ),
     "q_p": (
        "### Query:{q} ### Prompt:"
@@ -98,12 +101,14 @@ def main(config: "DictConfig"):
 
     s_p_t_dir = config.s_p_t_dir
     if config.prompt_way == "prompter":
-        s_p_t_dir = os.path.join(s_p_t_dir,f"prompter_{config.prompter_lm.show_name}")
+        promptway_name = config.prompt_way + "_" + config.data_args.prompt_type
+        s_p_t_dir = os.path.join(s_p_t_dir,f"prompter_{config.prompter_lm.show_name}|promptway_{promptway_name}")
 
     s_p_t_dir = os.path.join(s_p_t_dir,f"{config.target_lm.show_name}|max_new_tokens_{config.target_lm.generation_configs.max_new_tokens}")
     Path(s_p_t_dir).mkdir(exist_ok= True, parents= True)
+
     try:
-        save_path = os.path.join(s_p_t_dir,f"promptway_{config.prompt_way}|targetlm_do_sample_{config.target_lm.generation_configs.do_sample}|append_label_length_{config.append_label_length}.jsonl")
+        save_path = os.path.join(s_p_t_dir,f"targetlm_do_sample_{config.target_lm.generation_configs.do_sample}|append_label_length_{config.append_label_length}.jsonl")
         with open(save_path) as f:
             existed_lines = len(f.readlines())
         assert existed_lines == 0
@@ -112,6 +117,34 @@ def main(config: "DictConfig"):
     fp = jsonlines.open(save_path,"a")
 
     processed_data = get_data(config.data_args,mode = "test")
+
+    # for target from advbench.
+    with jsonlines.open("/home/liao.629/why_attack/data/mutli_0_reformatted_attack.jsonl") as f:
+        q_target_d = {}
+        for line in f:
+            q_target_d[line["q"]] = line["target"]
+    
+    tmp_processed_data = []
+    for _processed_data in processed_data:
+        _processed_data["target"] = q_target_d[_processed_data["q"]]
+        tmp_processed_data.append(_processed_data)
+
+    # dedup
+    processed_data = []
+    seen = set()
+    for item in tmp_processed_data:
+        if config.data_args.prompt_type == "q_target_p":
+            identifier = (item['q'], item['target'])
+        elif config.data_args.prompt_type == "q_target_lm_generation_p":
+            identifier = (item['q'], item['target_lm_generation'])
+        else:
+            raise NotImplementedError()
+        if identifier not in seen:
+            seen.add(identifier)
+            processed_data.append(item)
+
+
+    
 
     print(OmegaConf.to_yaml(config), color='red')
     
@@ -124,6 +157,7 @@ def main(config: "DictConfig"):
     prompter_lm_fn = None
     if config.prompt_way == "prompter":
         prompter_lm_fn = create_prompterlm(config)
+
     evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,processed_data,config,fp)
     end_time = time.time()
 
@@ -149,8 +183,13 @@ def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,
             p_s = batch["p"]
             p_s = ["" for _ in batch["p"]]
         elif config.prompt_way == "prompter":
-            target_lm_generation_s = batch["target_lm_generation"]
-            prompter_lm_inputs = [prompt_template.format(q = q_s[index],target_lm_generation = target_lm_generation_s[index]) for index in range(len(q_s))]
+            if config.data_args.prompt_type == "q_target_lm_generation_p":
+                for_prompter_s = batch["target_lm_generation"]
+                prompter_lm_inputs = [prompt_template.format(q = q_s[index],target_lm_generation = for_prompter_s[index]) for index in range(len(q_s))]
+            elif config.data_args.prompt_type == "q_target_p":
+                for_prompter_s = batch["target"]
+                prompter_lm_inputs = [prompt_template.format(q = q_s[index],target = for_prompter_s[index]) for index in range(len(q_s))]
+
             p_s = prompter_lm_fn(prompter_lm_inputs)
         else:
             raise NotImplementedError()
@@ -163,7 +202,7 @@ def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,
         reward_scores = reward_scores.cpu().tolist()
 
         for i in range(len(reward_scores)):
-            fp.write(dict(q = q_s[i],p = p_s[i],target_lm_generation = target_lm_generations[i],reward = reward_scores[i]))
+            fp.write(dict(q = q_s[i],p = p_s[i],target_lm_generation = target_lm_generations[i],reward = reward_scores[i],for_prompter = for_prompter_s[i]))
         
         progress_keys.update(config.batch_size)
 
