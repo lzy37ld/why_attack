@@ -88,6 +88,10 @@ def get_q_dict(datas,n_sample):
 
     for q in q_dict:
         if n_sample < len(q_dict[q]):
+            尽量多取那些和target保持一致的target_lm_generation??
+            记得要dedup
+            有没有可能取perplexity最低的部分？？？？为了能够natural？
+            有没有可能争取每个存在adv prompt的step 都取一遍。
             q_dict[q] = random.sample(q_dict[q],n_sample)
         else:
             print("q_dict[q]",len(q_dict[q]))
