@@ -80,16 +80,35 @@ python evaluate.py prompt_way=own append_label_length=6 target_lm.generation_con
 
 
 
-# evaluate_for_test.py
-python evaluate_for_each_instances.py prompt_way=own batch_size=48 target_lm=llama2-chat offset=?
-python evaluate_for_each_instances.py prompt_way=own batch_size=48 offset=0 data_dir=results_n_steps_500_vicuna data_prefix="individual_behaviors_vicuna_gcg_offset\{offset\}.json" target_lm=vicuna-chat
-
-
-
 
 
 python check_tokens.py data="'/home/liao.629/why_attack/s_p_t_evaluate/promptway_own|targetlm_do_sample_False|append_label_length_-1.jsonl'"
 python check_tokens.py data="'/home/liao.629/why_attack/s_p_t_evaluate/promptway_no|targetlm_do_sample_False|append_label_length_-1.jsonl'"
+
+
+
+
+
+
+
+
+
+
+
+
+# evaluate_overgenerated_data
+
+# python evaluate_overgenerated_data.py prompt_way=own batch_size=48 offset=$offset data_dir=results_n_steps_500_vicuna data_prefix="individual_behaviors_vicuna_gcg_offset\{offset\}.json" target_lm=vicuna-chat adv_prompt_steps_per_instances=500
+python evaluate_overgenerated_data.py prompt_way=own batch_size=48 offset=$offset data_dir=/fs/ess/PAA0201/lzy37ld/why_attack/data/results_n_steps_1000_llama2-chat data_prefix="individual_behaviors_llama2-chat_gcg_offset\{offset\}.json" target_lm=llama2-chat adv_prompt_steps_per_instances=1000
+
+
+
+# filter_overgenerated_data
+
+python filter_overgenerated_data.py evaluated_data_path_template="/users/PAA0201/lzy37ld/why_attack/s_p_t_evaluate/llama2-7b-chat|max_new_tokens_60/\{offset\}|promptway_own|targetlm_do_sample_False|append_label_length_-1.jsonl" evaluated_model=llama2-7b-chat n_sample=200 sample_way=step
+python filter_overgenerated_data.py evaluated_data_path_template="/users/PAA0201/lzy37ld/why_attack/s_p_t_evaluate/llama2-7b-chat|max_new_tokens_60/\{offset\}|promptway_own|targetlm_do_sample_False|append_label_length_-1.jsonl" evaluated_model=llama2-7b-chat n_sample=200 sample_way=random
+
+
 
 
 

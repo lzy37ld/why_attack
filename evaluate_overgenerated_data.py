@@ -48,7 +48,7 @@ def do_reps(
     return source_reps
 
 
-@hydra.main(config_path="./myconfig", config_name="config_evaluate")
+@hydra.main(config_path="./myconfig", config_name="config_evaluate_overgenerated_data")
 def main(config: "DictConfig"):
     start_time = time.time()
     Path(config.s_p_t_dir).mkdir(exist_ok= True, parents= True)
@@ -149,7 +149,6 @@ def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,processed_data,
                 tmp["loss"] = item["loss"]
                 tmp["step"] = step
                 all_unique_qs_datas.append(tmp)
-
 
         with tqdm(all_unique_qs_datas, total=len(all_unique_qs_datas),desc="instances iteration",leave= False) as progress_instances:
                 

@@ -1,0 +1,27 @@
+hydra:
+  output_subdir: null
+  run:
+    # current dir when you read this file..
+    dir: ./
+
+determine_way: all
+split_file: 'data/splits.json'
+
+# "/home/liao.629/why_attack/s_p_t_evaluate/vicuna-7b-chat-v1.5|max_new_tokens_60/\{offset\}|promptway_own|targetlm_do_sample_False|append_label_length_-1.jsonl"
+evaluated_data_path_template: null
+# vicuna-7b-chat-v1.5
+evaluated_model: null
+
+# how many adv prompts from each query
+n_sample: 200
+
+# random or step or loss_100
+# random means sample randomly
+# steps mean sample more steps as many as possible
+# loss_100 means sample more diverse loss as much as possible. 100 means the number of intervals
+
+# random|low_ppl or step|low_ppl
+# you could add extra constraints about low_ppl, which means sample from those have low ppl.
+sample_way: step
+
+save_dir: ./data

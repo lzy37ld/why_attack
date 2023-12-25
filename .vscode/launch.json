@@ -5,6 +5,20 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
+			"name": "filter generated data",
+			"type": "python",
+			"request": "launch",
+			"program": "${file}",
+			"console": "integratedTerminal",
+			"justMyCode": true,
+			"args": [
+				"evaluated_data_path_template='/users/PAA0201/lzy37ld/why_attack/s_p_t_evaluate/llama2-7b-chat|max_new_tokens_60/{offset}|promptway_own|targetlm_do_sample_False|append_label_length_-1.jsonl'",
+				"evaluated_model=llama2-7b-chat",
+				"n_sample=200",
+				"sample_way=step"
+			]
+		},
+		{
 			"name": "evaluate for each instances",
 			"type": "python",
 			"request": "launch",
