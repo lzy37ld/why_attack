@@ -8,7 +8,20 @@ from collections import defaultdict as ddict
 import numpy as np
 import torch
 import copy
+from torch.nn import CrossEntropyLoss
+loss_fct = CrossEntropyLoss(reduction="none")
 
+def cal_loss_avg(loss):
+    non_zero_mask = loss != 0
+        # 注意，如果一行全部为零，则其平均值将是NaN
+    average_ignoring_zeros = torch.zeros(loss.size(0))
+    for i in range(loss.size(0)):
+        non_zero_values = loss[i, non_zero_mask[i]]
+        if len(non_zero_values) > 0:
+            average_ignoring_zeros[i] = non_zero_values.mean()
+        else:
+            average_ignoring_zeros[i] = float('nan')  # 如果一行全是0，则平均值为NaN
+    return average_ignoring_zeros
 
 def check_torch_dtype(config):
     kwargs = {}
@@ -223,12 +236,17 @@ def create_targetlm(config):
                     print("Add special tokens should be True")
                     try:
                         input_ids = self.tokenizer(batch, return_tensors='pt',padding= True).to(device)
-                        adv_ids = self.tokenizer(batch_outputs,return_tensors='pt')
-                        mask_end = -adv_ids.shape[1]
+                        adv_ids = self.tokenizer(batch_outputs,return_tensors='pt').input_ids
+                        mask_end = adv_ids.shape[1]
+                        breakpoint()
                         labels = copy.deepcopy(input_ids.input_ids)
-                        labels[:-mask_end] = -100
-                        output = self.model(**input_ids,labels = labels).loss
-                        ppl = torch.exp(output)
+                        labels[:,:-mask_end] = -100
+                        logits = self.model(**input_ids,labels = labels).logits
+                        logits = logits.permute(0,2,1)
+                        loss = loss_fct(logits, labels)
+                        loss = cal_loss_avg(loss)
+                        breakpoint()
+                        ppl = torch.exp(loss)
                         print("*"*50)
                         print(ppl)
                         outputs_l.extend(ppl.detach().cpu().tolist())
@@ -238,12 +256,15 @@ def create_targetlm(config):
                         for single_batch in batch:
                             input_ids = self.tokenizer(single_batch, return_tensors='pt',padding= True).to(device)
                             labels = copy.deepcopy(input_ids.input_ids)
-                            labels[:-20] = -100
-                            output = self.model(**input_ids,labels = labels).loss
-                            ppl = torch.exp(output)
+                            labels[:,:-mask_end] = -100
+                            logits = self.model(**input_ids,labels = labels).logits
+                            logits = logits.permute(0,2,1)
+                            loss = loss_fct(logits, labels)
+                            loss = cal_loss_avg(loss)
+                            ppl = torch.exp(loss)
                             print("*"*50)
                             print(ppl)
-                            single_outputs_l.append(ppl.detach().cpu().item())
+                            single_outputs_l.extend(ppl.detach().cpu().tolist())
                         outputs_l.extend(single_outputs_l)        
                 return outputs_l
 
