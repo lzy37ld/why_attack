@@ -27,7 +27,7 @@ prompter_lm:
   # data .. ckpt original model ... prompt concatenation ...
   show_name: prompter_vicuna_ckpt_llama2-base_q_r_p
 ppl: false
-batch_size: 2
+batch_size: 4
 append_label_length: -1
 s_p_t_dir: ./prompter_test_results
 prompt_way: prompter

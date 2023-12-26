@@ -236,7 +236,8 @@ def create_targetlm(config):
                     print("Add special tokens should be True")
                     try:
                         input_ids = self.tokenizer(batch, return_tensors='pt',padding= True).to(device)
-                        adv_ids_attnetion = self.tokenizer(batch_outputs,return_tensors='pt',padding = True).attention_mask
+                        adv_batchs = [batch_outputs[j] + batch[j].split(batch_outputs[j])[1] for j in range(len(batch_inputs))]
+                        adv_ids_attnetion = self.tokenizer(adv_batchs,return_tensors='pt',padding = True).attention_mask
                         adv_ids_ends = torch.sum(adv_ids_attnetion,dim=1)
                         labels = copy.deepcopy(input_ids.input_ids)
                         for i, adv_ids_end in enumerate(adv_ids_ends):
@@ -253,7 +254,8 @@ def create_targetlm(config):
                         single_outputs_l = []
                         for batch_index,single_batch in enumerate(batch):
                             input_ids = self.tokenizer(single_batch, return_tensors='pt',padding= True).to(device)
-                            adv_ids_attnetion = self.tokenizer(batch_outputs,return_tensors='pt',padding = True).attention_mask
+                            adv_batchs = [batch_outputs[batch_index] + single_batch.split(batch_outputs[batch_index])[1]]
+                            adv_ids_attnetion = self.tokenizer(adv_batchs,return_tensors='pt',padding = True).attention_mask
                             adv_ids_ends = torch.sum(adv_ids_attnetion,dim=1)
                             labels = copy.deepcopy(input_ids.input_ids)
                             for i, adv_ids_end in enumerate(adv_ids_ends):
