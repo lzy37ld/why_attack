@@ -12,8 +12,9 @@ sampled_queries=""
 
 victim_model="llama2-7b-chat"
 split_path="data/train_val_test.json"
-sampled_queries="data/success_JB_victimmodel=llama2-7b-chat_sampleway=random_nsample=200.json"
-sample_way_and_n_sample="random_nsample=200"
+# step | loss_100 | random
+sampled_queries="data/success_JB_victimmodel=llama2-7b-chat_sampleway=step_nsample=200.json"
+sample_way_and_n_sample="step_nsample=200"
 num_train_epochs=5
 
 

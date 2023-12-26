@@ -236,34 +236,34 @@ def create_targetlm(config):
                     print("Add special tokens should be True")
                     try:
                         input_ids = self.tokenizer(batch, return_tensors='pt',padding= True).to(device)
-                        adv_ids = self.tokenizer(batch_outputs,return_tensors='pt').input_ids
-                        mask_end = adv_ids.shape[1]
-                        breakpoint()
+                        adv_ids_attnetion = self.tokenizer(batch_outputs,return_tensors='pt',padding = True).attention_mask
+                        adv_ids_ends = torch.sum(adv_ids_attnetion,dim=1)
                         labels = copy.deepcopy(input_ids.input_ids)
-                        labels[:,:-mask_end] = -100
+                        for i, adv_ids_end in enumerate(adv_ids_ends):
+                            end = adv_ids_end
+                            labels[i,:-end] = -100
                         logits = self.model(**input_ids,labels = labels).logits
                         logits = logits.permute(0,2,1)
                         loss = loss_fct(logits, labels)
                         loss = cal_loss_avg(loss)
-                        breakpoint()
                         ppl = torch.exp(loss)
-                        print("*"*50)
-                        print(ppl)
                         outputs_l.extend(ppl.detach().cpu().tolist())
                     except:
                         print("run one by one")
                         single_outputs_l = []
-                        for single_batch in batch:
+                        for batch_index,single_batch in enumerate(batch):
                             input_ids = self.tokenizer(single_batch, return_tensors='pt',padding= True).to(device)
+                            adv_ids_attnetion = self.tokenizer(batch_outputs,return_tensors='pt',padding = True).attention_mask
+                            adv_ids_ends = torch.sum(adv_ids_attnetion,dim=1)
                             labels = copy.deepcopy(input_ids.input_ids)
-                            labels[:,:-mask_end] = -100
+                            for i, adv_ids_end in enumerate(adv_ids_ends):
+                                end = adv_ids_end
+                                labels[i,:-end] = -100
                             logits = self.model(**input_ids,labels = labels).logits
                             logits = logits.permute(0,2,1)
                             loss = loss_fct(logits, labels)
                             loss = cal_loss_avg(loss)
                             ppl = torch.exp(loss)
-                            print("*"*50)
-                            print(ppl)
                             single_outputs_l.extend(ppl.detach().cpu().tolist())
                         outputs_l.extend(single_outputs_l)        
                 return outputs_l
