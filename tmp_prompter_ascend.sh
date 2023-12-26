@@ -12,8 +12,9 @@ sampled_queries=""
 
 victim_model="llama2-7b-chat"
 split_path="data/train_val_test.json"
-sampled_queries="data/success_JB_victimmodel=llama2-7b-chat_sampleway=step_nsample=200.json"
-sample_way_and_n_sample="step_nsample=200"
+sampled_queries="data/success_JB_victimmodel=llama2-7b-chat_sampleway=random_nsample=200.json"
+sample_way_and_n_sample="random_nsample=200"
+num_train_epochs=5
 
 
 if [[ $sampled_queries == *"$sample_way_and_n_sample"* ]]; then
@@ -30,7 +31,8 @@ else
   exit 1
 fi
 
-export WANDB_NAME=prompter_victim=${victim_model}_prompt_type=${prompt_type}_model_name=${model_name}_sample_way_and_n_sample=${sample_way_and_n_sample}
+
+export WANDB_NAME=prompter_victim=${victim_model}_prompt_type=${prompt_type}_model_name=${model_name}_sample_way_and_n_sample=${sample_way_and_n_sample}_epoch_${num_train_epochs}
 base_ckpt=$WHY_ATTACK_CKPT
 base_data=$WHY_ATTACK_DATA
 
@@ -43,10 +45,7 @@ if [ -z "$base_data" ]; then
 fi
 
 
-
-
-
-output_dir=$base_ckpt/prompter_victim=${victim_model}_prompt_type=${prompt_type}_model_name=${model_name}_sample_way_and_n_sample=${sample_way_and_n_sample}/
+output_dir=$base_ckpt/prompter_victim=${victim_model}_prompt_type=${prompt_type}_model_name=${model_name}_sample_way_and_n_sample=${sample_way_and_n_sample}_epoch_${num_train_epochs}/
 
 # no evaluation
 echo "no evaluation"
@@ -57,11 +56,10 @@ torchrun --nproc_per_node=4 --master_port=1234 train_prompter.py \
     --split_path ${split_path} \
     --bf16 True \
     --output_dir $output_dir \
-    --num_train_epochs 3 \
+    --num_train_epochs $num_train_epochs \
     --per_device_train_batch_size 1 \
     --per_device_eval_batch_size 4 \
     --gradient_accumulation_steps 2 \
-    --save_total_limit 2 \
     --evaluation_strategy 'no' \
     --save_strategy 'steps' \
     --save_only_model True \

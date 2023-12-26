@@ -1,5 +1,5 @@
-defaults:
-  - generation_configs: ../../generation_configs/greedy
+# defaults:
+#   - generation_configs: ../../generation_configs/greedy
 
 model_name: null
 show_name: null

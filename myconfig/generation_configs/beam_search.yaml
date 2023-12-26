@@ -1,7 +1,8 @@
-do_sample: false
-max_new_tokens: 20
-num_return_sequences: 1
-top_p: null
-top_k: null
-num_beams: 3
-name: beam_search
+generation_configs:
+  do_sample: false
+  max_new_tokens: 20
+  num_return_sequences: 1
+  top_p: null
+  top_k: null
+  num_beams: 3
+  name: beam_search

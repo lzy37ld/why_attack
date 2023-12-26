@@ -8,7 +8,7 @@ defaults:
   - reward_lm: reward_lm
   - target_lm: vicuna-chat
   - prompter_lm: prompter_lm
-  - generation_configs@prompter_lm/generation_configs: greedy
+  - generation_configs@prompter_lm: greedy
   - _self_
 
 
@@ -18,15 +18,16 @@ target_lm:
   debug: false
 data_args:
   all_queries_path: ./data/harmful_q_target.json
-  prompt_type: null
-  split_path: ./data/train_test_val_split.json
+  prompt_type: q_p
+  split_path: data/train_val_test.json
   split: null
 
 prompter_lm:
   model_name: /research/nfs_sun_397/liao.629/why_attack/ckpt/prompter_vicuna_ckpt_llama2-base_q_r_p
   # data .. ckpt original model ... prompt concatenation ...
   show_name: prompter_vicuna_ckpt_llama2-base_q_r_p
-batch_size: 16
+ppl: false
+batch_size: 2
 append_label_length: -1
 s_p_t_dir: ./prompter_test_results
 prompt_way: prompter

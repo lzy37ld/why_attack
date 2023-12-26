@@ -1,6 +1,7 @@
-do_sample: true
-max_new_tokens: 20
-num_return_sequences: 1
-top_p: null
-top_k: 5
-name: top_k
+generation_configs:
+  do_sample: true
+  max_new_tokens: 20
+  num_return_sequences: 1
+  top_p: null
+  top_k: 5
+  name: top_k

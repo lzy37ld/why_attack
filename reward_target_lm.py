@@ -7,6 +7,7 @@ import itertools
 from collections import defaultdict as ddict
 import numpy as np
 import torch
+import copy
 
 
 def check_torch_dtype(config):
@@ -150,6 +151,21 @@ def create_targetlm(config):
             def create_gen_config(self,gen_config):
                 self.gen_config = GenerationConfig(**gen_config, **self.gen_kwargs)
 
+            @torch.no_grad()
+            def get_target_lm_generation(self, q_s,p_s,num_return_sequences = 1,after_sys_tokens = None):
+                # q_s : questions  p_s:prompts
+
+                generation_configs = config.target_lm.generation_configs
+                generation_configs.num_return_sequences = num_return_sequences
+                target_model.create_gen_config(generation_configs)
+                assert len(q_s) == len(p_s)
+                if after_sys_tokens is not None:
+                    assert len(q_s) == len(after_sys_tokens)
+                
+                target_model.after_sys_tokens = after_sys_tokens
+                generation = target_model.targetlm_run(q_s,p_s,device = self.target_model_device)
+                return generation    
+
             # q_s questions, p_s prompts
             def _targetlm_run(self, q_s, p_s, device):
                 outputs_l = []
@@ -187,35 +203,63 @@ def create_targetlm(config):
 
                 return generations
             
+            @torch.no_grad()
+            def ppl_run(self,q_s,p_s):
+                ppl = self._ppl_run(q_s, p_s, device = self.target_model_device)
+                return ppl
+
+            # q_s questions, p_s prompts
+            def _ppl_run(self, q_s, p_s, device):
+                outputs_l = []
+                batch_size = self.batch_size
+                for i in range(0,len(q_s),batch_size):    
+                    batch_inputs = q_s[i: i +batch_size]
+                    batch_outputs = p_s[i: i +batch_size]
+                    batch = [self.template.format(input = batch_inputs[index], prompt = batch_outputs[index]) for index in range(len(batch_inputs))]
+                    if self.after_sys_tokens is not None:
+                        batch = [batch[i] + " " + self.after_sys_tokens[i] for i in range(len(batch))]
+                    print(batch[0])
+                    print(self.tokenizer.decode(self.tokenizer.encode(batch[0])))
+                    print("Add special tokens should be True")
+                    try:
+                        input_ids = self.tokenizer(batch, return_tensors='pt',padding= True).to(device)
+                        adv_ids = self.tokenizer(batch_outputs,return_tensors='pt')
+                        mask_end = -adv_ids.shape[1]
+                        labels = copy.deepcopy(input_ids.input_ids)
+                        labels[:-mask_end] = -100
+                        output = self.model(**input_ids,labels = labels).loss
+                        ppl = torch.exp(output)
+                        print("*"*50)
+                        print(ppl)
+                        outputs_l.extend(ppl.detach().cpu().tolist())
+                    except:
+                        print("run one by one")
+                        single_outputs_l = []
+                        for single_batch in batch:
+                            input_ids = self.tokenizer(single_batch, return_tensors='pt',padding= True).to(device)
+                            labels = copy.deepcopy(input_ids.input_ids)
+                            labels[:-20] = -100
+                            output = self.model(**input_ids,labels = labels).loss
+                            ppl = torch.exp(output)
+                            print("*"*50)
+                            print(ppl)
+                            single_outputs_l.append(ppl.detach().cpu().item())
+                        outputs_l.extend(single_outputs_l)        
+                return outputs_l
 
         device_map = {"device_map":"auto"}
         target_model_device = "cuda:0"
 
         target_model = Target_Model(config.target_lm,device_map=device_map)
+        target_model.target_model_device = target_model_device
         target_model.eval()
         target_model.requires_grad_(False)
-
-        @torch.no_grad()
-        def get_target_lm_generation(q_s,p_s,num_return_sequences = 1,after_sys_tokens = None):
-            # q_s : questions  p_s:prompts
-
-            generation_configs = config.target_lm.generation_configs
-            generation_configs.num_return_sequences = num_return_sequences
-            target_model.create_gen_config(generation_configs)
-            assert len(q_s) == len(p_s)
-            if after_sys_tokens is not None:
-                assert len(q_s) == len(after_sys_tokens)
-            
-            target_model.after_sys_tokens = after_sys_tokens
-
-            
-            generation = target_model.targetlm_run(q_s,p_s,device = target_model_device)
-            return generation
+        return target_model
         
     else:
-        get_target_lm_generation = True
+        target_model = None
 
-    return get_target_lm_generation
+    return target_model
 
 
 

@@ -177,7 +177,7 @@ def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,processed_data,
                     label_s_tokens = target_model_tokenizer(label_s,padding = True,return_tensors = "pt",add_special_tokens = False).input_ids[:,:config.append_label_length]
                     label_s_tokens_decode = target_model_tokenizer.batch_decode(label_s_tokens,skip_special_tokens = True)
 
-                target_lm_generations = target_lm_fn(q_s,p_s,after_sys_tokens = label_s_tokens_decode)
+                target_lm_generations = target_lm_fn.get_target_lm_generation(q_s,p_s,after_sys_tokens = label_s_tokens_decode)
                 reward_scores = reward_lm_fn(q_s,target_lm_generations)
                 reward_scores = reward_scores.cpu().tolist()
 

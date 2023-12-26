@@ -34,16 +34,20 @@ PROMPT_DICT = {
 
 
 def get_data(data_args):
+    if data_args.prompt_type!= "q_p":
+        raise NotImplementedError()
     all_queries_path = data_args.all_queries_path
     split_path = data_args.split_path
     with open(all_queries_path) as f:
         all_queries = json.load(f)
     with open(split_path) as f:
         splits = json.load(f)
-    queries = all_queries[splits[data_args.split]]
     list_qs = []
-    for q in queries:
-        list_qs.append(q)
+    for q in splits[data_args.split]:
+        list_qs.append(dict(q = q, target = all_queries[q]))
+    print("****************")
+    print(list_qs[0])
+    print("****************")
     return list_qs
 
 
@@ -82,57 +86,56 @@ def do_reps(
     return source_reps
 
 
-# @hydra.main(config_path="./myconfig", config_name="config_prompter_evaluate")
-@hydra.main(config_path="./myconfig", config_name="config_test")
+@hydra.main(config_path="./myconfig", config_name="config_prompter_evaluate")
 def main(config: "DictConfig"):
 
     print(OmegaConf.to_yaml(config), color='red')
 
 
-    # start_time = time.time()
-    # Path(config.s_p_t_dir).mkdir(exist_ok= True, parents= True)
+    start_time = time.time()
+    Path(config.s_p_t_dir).mkdir(exist_ok= True, parents= True)
 
-    # config.reward_lm.batch_size = config.batch_size
-    # config.target_lm.batch_size = config.batch_size
+    config.reward_lm.batch_size = config.batch_size
+    config.target_lm.batch_size = config.batch_size
 
-    # s_p_t_dir = config.s_p_t_dir
-    # if config.prompt_way == "prompter":
-    #     promptway_name = config.prompt_way + "_" + config.data_args.prompt_type
-    #     s_p_t_dir = os.path.join(s_p_t_dir,f"prompter_{config.prompter_lm.show_name}|promptway_{promptway_name}")
+    s_p_t_dir = config.s_p_t_dir
+    if config.prompt_way == "prompter":
+        promptway_name = config.prompt_way + "_" + config.data_args.prompt_type
+        s_p_t_dir = os.path.join(s_p_t_dir,f"{config.data_args.split}|prompter_{config.prompter_lm.show_name}|decode_{config.prompter_lm.generation_configs.name}|promptway_{promptway_name}")
 
-    # s_p_t_dir = os.path.join(s_p_t_dir,f"{config.target_lm.show_name}|max_new_tokens_{config.target_lm.generation_configs.max_new_tokens}")
-    # Path(s_p_t_dir).mkdir(exist_ok= True, parents= True)
+    s_p_t_dir = os.path.join(s_p_t_dir,f"{config.target_lm.show_name}|max_new_tokens_{config.target_lm.generation_configs.max_new_tokens}")
+    Path(s_p_t_dir).mkdir(exist_ok= True, parents= True)
 
-    # try:
-    #     save_path = os.path.join(s_p_t_dir,f"targetlm_do_sample_{config.target_lm.generation_configs.do_sample}|append_label_length_{config.append_label_length}.jsonl")
-    #     with open(save_path) as f:
-    #         existed_lines = len(f.readlines())
-    #     assert existed_lines == 0
-    # except:
-    #     pass
-    # fp = jsonlines.open(save_path,"a")
+    try:
+        save_path = os.path.join(s_p_t_dir,f"targetlm_do_sample_{config.target_lm.generation_configs.do_sample}|append_label_length_{config.append_label_length}.jsonl")
+        with open(save_path) as f:
+            existed_lines = len(f.readlines())
+        assert existed_lines == 0
+    except:
+        pass
+    fp = jsonlines.open(save_path,"a")
 
-    # processed_data = get_data(config.data_args)
+    processed_data = get_data(config.data_args)
 
-    # print(OmegaConf.to_yaml(config), color='red')
+    print(OmegaConf.to_yaml(config), color='red')
     
-    # target_model_tokenizer = None
-    # if config.append_label_length != -1:
-    #     # only for selecting tokens at the front
-    #     target_model_tokenizer = set_pad_token(AutoTokenizer.from_pretrained(config.target_lm.model_name,padding_side = "right"))
-    # reward_lm_fn = create_reward(config)
-    # target_lm_fn = create_targetlm(config)
-    # prompter_lm_fn = None
-    # if config.prompt_way == "prompter":
-    #     prompter_lm_fn = create_prompterlm(config)
+    target_model_tokenizer = None
+    if config.append_label_length != -1:
+        # only for selecting tokens at the front
+        target_model_tokenizer = set_pad_token(AutoTokenizer.from_pretrained(config.target_lm.model_name,padding_side = "right"))
+    reward_lm_fn = create_reward(config)
+    target_lm_fn = create_targetlm(config)
+    prompter_lm_fn = None
+    if config.prompt_way == "prompter":
+        prompter_lm_fn = create_prompterlm(config)
 
-    # evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,processed_data,config,fp)
-    # end_time = time.time()
+    evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,processed_data,config,fp)
+    end_time = time.time()
 
-    # # 计算运行时间
-    # elapsed_time = end_time - start_time
+    # 计算运行时间
+    elapsed_time = end_time - start_time
 
-    # print(f"函数运行时间：{elapsed_time}秒")
+    print(f"函数运行时间：{elapsed_time}秒")
 
 
 
@@ -160,12 +163,15 @@ def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,
         assert len(q_s) == len(p_s)
 
         label_s_tokens_decode = None
-        target_lm_generations = target_lm_fn(q_s,p_s,after_sys_tokens = label_s_tokens_decode)
+        target_lm_generations = target_lm_fn.get_target_lm_generation(q_s,p_s,after_sys_tokens = label_s_tokens_decode)
+        ppl_scores = [-1 for _ in range(len(q_s))]
+        if config.ppl:
+            ppl_scores = target_lm_fn.ppl_run(q_s,p_s)
         reward_scores = reward_lm_fn(q_s,target_lm_generations)
         reward_scores = reward_scores.cpu().tolist()
 
         for i in range(len(reward_scores)):
-            fp.write(dict(q = q_s[i],p = p_s[i],target_lm_generation = target_lm_generations[i],reward = reward_scores[i],prompter_lm_inputs = prompter_lm_inputs[i]))
+            fp.write(dict(q = q_s[i],p = p_s[i],target_lm_generation = target_lm_generations[i],reward = reward_scores[i],ppl_score = ppl_scores[i],prompter_lm_inputs = prompter_lm_inputs[i]))
         
         progress_keys.update(config.batch_size)
 
