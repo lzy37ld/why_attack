@@ -60,25 +60,27 @@ def main(config: "DictConfig"):
     s_p_t_dir = os.path.join(s_p_t_dir,f"{config.target_lm.show_name}|max_new_tokens_{config.target_lm.generation_configs.max_new_tokens}")
     Path(s_p_t_dir).mkdir(exist_ok= True, parents= True)
     try:
-        path = os.path.join(s_p_t_dir,f"offset_{config.offset}|promptway_{config.prompt_way}|targetlm_do_sample_{config.target_lm.generation_configs.do_sample}|append_label_length_{config.append_label_length}.jsonl")
-        with open(path) as f:
+        output_path = os.path.join(s_p_t_dir,f"offset_{config.offset}|promptway_{config.prompt_way}|targetlm_do_sample_{config.target_lm.generation_configs.do_sample}|append_label_length_{config.append_label_length}.jsonl")
+        with open(output_path) as f:
             existed_lines = len(f.readlines())
         # assert existed_lines == 0
     except:
         existed_lines = 0
     # assert existed_lines == 0, "delete it"
-    data_path = os.path.join(config.data_dir,config.data_prefix.format(offset = config.offset))
-    # with open(data_path) as f:
+    input_data_path = os.path.join(config.data_dir,config.data_prefix.format(offset = config.offset))
+    if not os.path.exists(input_data_path):
+        exit(1)
+    # with open(input_data_path) as f:
     #     lines = len(f.readlines())
     # if lines != 5140113:
     #     print("GCG is still going")
     #     exit(1)
 
 
-    fp = jsonlines.open(path,"a")
+    fp = jsonlines.open(output_path,"a")
 
 
-    with open(data_path) as f:
+    with open(input_data_path) as f:
         data = json.load(f)
     goals = data["params"]["goals"]
     targets = data["params"]["targets"]

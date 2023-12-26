@@ -5,7 +5,6 @@ hydra:
     dir: ./
 
 determine_way: all
-split_file: 'data/splits.json'
 
 # "/home/liao.629/why_attack/s_p_t_evaluate/vicuna-7b-chat-v1.5|max_new_tokens_60/\{offset\}|promptway_own|targetlm_do_sample_False|append_label_length_-1.jsonl"
 evaluated_data_path_template: null

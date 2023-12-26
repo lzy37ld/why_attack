@@ -12,7 +12,7 @@
 			"console": "integratedTerminal",
 			"justMyCode": true,
 			"args": [
-				"evaluated_data_path_template='/users/PAA0201/lzy37ld/why_attack/s_p_t_evaluate/llama2-7b-chat|max_new_tokens_60/{offset}|promptway_own|targetlm_do_sample_False|append_label_length_-1.jsonl'",
+				"evaluated_data_path_template='/users/PAA0201/lzy37ld/why_attack_lzy/s_p_t_evaluate/llama2-7b-chat|max_new_tokens_60/{offset}|promptway_own|targetlm_do_sample_False|append_label_length_-1.jsonl'",
 				"evaluated_model=llama2-7b-chat",
 				"n_sample=200",
 				"sample_way=step"
@@ -29,7 +29,7 @@
 				"prompt_way=own",
 				"batch_size=4",
 				"offset=0",
-				"data_dir=/fs/ess/PAA0201/lzy37ld/why_attack/data/results_n_steps_1000_llama2-chat",
+				"data_dir=/fs/ess/PAA0201/lzy37ld/why_attack_lzy/data/results_n_steps_1000_llama2-chat",
 				"data_prefix=individual_behaviors_llama2-chat_gcg_offset${offset}.json",
 				"target_lm=llama2-chat",
 				"adv_prompt_steps_per_instances=1000"

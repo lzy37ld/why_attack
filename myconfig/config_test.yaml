@@ -1,0 +1,10 @@
+hydra:
+  output_subdir: null
+  run:
+    # current dir when you read this file..
+    dir: ./
+
+defaults:
+  - generation_configs@reward_lm/generation_configs: top_k
+  - _self_
+

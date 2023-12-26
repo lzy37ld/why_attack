@@ -19,12 +19,16 @@
 # print("Dividers:", len(dividers))
 
 
+# import jsonlines
+# train_offsets = ["offset_0", "offset_10", "offset_20", "offset_30", "offset_40", "offset_50", "offset_60", "offset_70", "offset_80", "offset_90", "offset_100", "offset_110", "offset_120", "offset_130", "offset_140", "offset_160", "offset_170", "offset_180", "offset_190", "offset_200", "offset_210", "offset_240", "offset_250", "offset_260", "offset_270", "offset_280", "offset_290", "offset_300", "offset_310", "offset_320", "offset_330", "offset_340", "offset_360", "offset_370", "offset_380", "offset_390", "offset_400", "offset_420", "offset_430", "offset_440"]
+# template = "/users/PAA0201/lzy37ld/why_attack_lzy/s_p_t_evaluate/llama2-7b-chat|max_new_tokens_60/{offset}|promptway_own|targetlm_do_sample_False|append_label_length_-1.jsonl"
+# for offset in train_offsets:
+#     path = template.format(offset = offset)
+#     with open(path) as f:
+#         lines = f.readlines()
+#         assert len(lines) == 1920000, "wrong"
+#         print(offset, len(lines))
+
 import jsonlines
-train_offsets = ["offset_0", "offset_10", "offset_20", "offset_30", "offset_40", "offset_50", "offset_60", "offset_70", "offset_80", "offset_90", "offset_100", "offset_110", "offset_120", "offset_130", "offset_140", "offset_160", "offset_170", "offset_180", "offset_190", "offset_200", "offset_210", "offset_240", "offset_250", "offset_260", "offset_270", "offset_280", "offset_290", "offset_300", "offset_310", "offset_320", "offset_330", "offset_340", "offset_360", "offset_370", "offset_380", "offset_390", "offset_400", "offset_420", "offset_430", "offset_440"]
-template = "/users/PAA0201/lzy37ld/why_attack/s_p_t_evaluate/llama2-7b-chat|max_new_tokens_60/{offset}|promptway_own|targetlm_do_sample_False|append_label_length_-1.jsonl"
-for offset in train_offsets:
-    path = template.format(offset = offset)
-    with open(path) as f:
-        lines = f.readlines()
-        assert len(lines) == 1920000, "wrong"
-        print(offset, len(lines))
+with jsonlines.open("/users/PAA0201/lzy37ld/why_attack_lzy/s_p_t_evaluate/llama2-7b-chat|max_new_tokens_60/offset_0|promptway_own|targetlm_do_sample_False|append_label_length_-1.jsonl") as f:
+	print(len(list(f)))

@@ -1,0 +1,12 @@
+hydra:
+  output_subdir: null
+  run:
+    # current dir when you read this file..
+    dir: ./
+
+all_queries_path: ./data/harmful_q_target.json
+num_train_queries: 318
+num_eval_queries: rest
+num_test_queries: 150
+success_jb_path: null
+save_dir: ./data

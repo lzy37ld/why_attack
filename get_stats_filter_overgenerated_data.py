@@ -96,7 +96,7 @@ def get_q_dict(datas,n_sample):
 args = {'determine_way': 'all'}
 args = SimpleNamespace(**args)
 
-path_template = "/fs/ess/PAA0201/lzy37ld/why_attack/data/s_p_t_evaluate/llama2-7b-chat|max_new_tokens_60/offset_{offset}|promptway_own|targetlm_do_sample_False|append_label_length_-1.jsonl"
+path_template = "/fs/ess/PAA0201/lzy37ld/why_attack_lzy/data/s_p_t_evaluate/llama2-7b-chat|max_new_tokens_60/offset_{offset}|promptway_own|targetlm_do_sample_False|append_label_length_-1.jsonl"
 q_dict_list = []
 n_sample = 100
 for offset in range(0,520,10):

@@ -54,9 +54,9 @@ class ModelArguments:
 
 @dataclass
 class DataArguments:
-    data_path: str = field(default="/home/liao.629/why_attack/data/vicuna_process_100.json", metadata={"help": "Path to the training data."})
-    prompt_type: str = field(default="q_r_p", metadata = {"help": "chose which type to use"})
-    train_ratio: float = field(default=0.6, metadata={"help":"train ratio * total = #of training examples. Rest for evaluation"})
+    sampled_queries: str = field(default=None, metadata={"help": "Path to the sampled queries."})
+    split_path: str = field(default=None, metadata={"help": "Path to the split queries."})
+    prompt_type: str = field(default="q_r", metadata = {"help": "chose which type to use"})
 
 
 @dataclass
@@ -134,29 +134,23 @@ def preprocess(
 class SupervisedDataset(Dataset):
     """Dataset for supervised fine-tuning."""
 
-    def __init__(self, data_args, tokenizer: transformers.PreTrainedTokenizer, mode = "train"):
+    def __init__(self, data_args, tokenizer: transformers.PreTrainedTokenizer):
         super(SupervisedDataset, self).__init__()
         logging.warning("Loading data...")
-        data_path = data_args.data_path
+        split_path = data_args.split_path
+        sampled_queries = data_args.sampled_queries
         prompt_type = data_args.prompt_type
-        train_ratio = data_args.train_ratio
-        assert 0 < train_ratio < 1,"train ratio >0 <1"
 
-        with open(data_path) as f:
-            datas = json.load(f)
+        with open(split_path) as f:
+            train_splits = json.load(f)["train"]
 
+        with open(sampled_queries) as f:
+            sampled_queries = json.load(f)
 
-        if mode == "train":
-            q_s = list(datas.keys())[:int(len(datas) * train_ratio)]
-        elif mode == "test":
-            q_s = list(datas.keys())[int(len(datas) * train_ratio):]
-        else:
-            raise NotImplementedError()
         
         list_data_dict = []
-        for q in q_s:
-            list_data_dict.extend(datas[q])
-        
+        for q in train_splits:
+            list_data_dict.extend(sampled_queries[q])
         
         logging.warning("Formatting inputs...")
         prompt_template = PROMPT_DICT[prompt_type]
@@ -166,6 +160,9 @@ class SupervisedDataset(Dataset):
             for example in list_data_dict
         ]
         targets = [f"{example['p']}{tokenizer.eos_token}" for example in list_data_dict]
+        print('list_data_dict[0]',list_data_dict[0])
+        print('sources[0',sources[0])
+        print('targets[0]',targets[0])
 
         logging.warning("Tokenizing inputs... This may take some time...")
         data_dict = preprocess(sources, targets, tokenizer)
@@ -200,10 +197,9 @@ class DataCollatorForSupervisedDataset(object):
 
 def make_supervised_data_module(tokenizer: transformers.PreTrainedTokenizer, data_args) -> Dict:
     """Make dataset and collator for supervised fine-tuning."""
-    train_dataset = SupervisedDataset(tokenizer=tokenizer, data_args=data_args, mode = "train")
-    eval_dataset = SupervisedDataset(tokenizer=tokenizer, data_args=data_args, mode = "test")
+    train_dataset = SupervisedDataset(tokenizer=tokenizer, data_args=data_args)
     data_collator = DataCollatorForSupervisedDataset(tokenizer=tokenizer)
-    return dict(train_dataset=train_dataset, eval_dataset=eval_dataset, data_collator=data_collator)
+    return dict(train_dataset=train_dataset, data_collator=data_collator)
 
 
 def train():
