@@ -149,6 +149,7 @@ def create_targetlm(config):
                     self.template = self.template.format(system_message = config.system_message, input = "{input}", prompt = "{prompt}")
                 else:
                     self.template = self.template.format(input = "{input}", prompt = "{prompt}")
+                self.ppl_template = config.ppl_template
                 self.batch_size = config.batch_size
                 kwargs = check_torch_dtype(config)
 
@@ -228,22 +229,20 @@ def create_targetlm(config):
                 for i in range(0,len(q_s),batch_size):    
                     batch_inputs = q_s[i: i +batch_size]
                     batch_outputs = p_s[i: i +batch_size]
-                    batch = [self.template.format(input = batch_inputs[index], prompt = batch_outputs[index]) for index in range(len(batch_inputs))]
-                    if self.after_sys_tokens is not None:
-                        batch = [batch[i] + " " + self.after_sys_tokens[i] for i in range(len(batch))]
+                    batch = [self.ppl_template.format(input = batch_inputs[index], prompt = batch_outputs[index]) for index in range(len(batch_inputs))]
                     print(batch[0])
                     print(self.tokenizer.decode(self.tokenizer.encode(batch[0])))
                     print("Add special tokens should be True")
                     try:
                         input_ids = self.tokenizer(batch, return_tensors='pt',padding= True).to(device)
-                        adv_batchs = [batch_outputs[j] + batch[j].split(batch_outputs[j])[1] for j in range(len(batch_inputs))]
-                        adv_ids_attnetion = self.tokenizer(adv_batchs,return_tensors='pt',padding = True).attention_mask
+                        adv_batchs = batch_outputs
+                        adv_ids_attnetion = self.tokenizer(adv_batchs,return_tensors='pt',padding = True, add_special_tokens = False).attention_mask
                         adv_ids_ends = torch.sum(adv_ids_attnetion,dim=1)
                         labels = copy.deepcopy(input_ids.input_ids)
                         for i, adv_ids_end in enumerate(adv_ids_ends):
                             end = adv_ids_end
                             labels[i,:-end] = -100
-                        logits = self.model(**input_ids,labels = labels).logits
+                        logits = self.model(**input_ids).logits
                         logits = logits.permute(0,2,1)
                         loss = loss_fct(logits, labels)
                         loss = cal_loss_avg(loss)
@@ -254,14 +253,14 @@ def create_targetlm(config):
                         single_outputs_l = []
                         for batch_index,single_batch in enumerate(batch):
                             input_ids = self.tokenizer(single_batch, return_tensors='pt',padding= True).to(device)
-                            adv_batchs = [batch_outputs[batch_index] + single_batch.split(batch_outputs[batch_index])[1]]
-                            adv_ids_attnetion = self.tokenizer(adv_batchs,return_tensors='pt',padding = True).attention_mask
+                            adv_batchs = batch_outputs
+                            adv_ids_attnetion = self.tokenizer(adv_batchs,return_tensors='pt',padding = True, add_special_tokens = False).attention_mask
                             adv_ids_ends = torch.sum(adv_ids_attnetion,dim=1)
                             labels = copy.deepcopy(input_ids.input_ids)
                             for i, adv_ids_end in enumerate(adv_ids_ends):
                                 end = adv_ids_end
                                 labels[i,:-end] = -100
-                            logits = self.model(**input_ids,labels = labels).logits
+                            logits = self.model(**input_ids).logits
                             logits = logits.permute(0,2,1)
                             loss = loss_fct(logits, labels)
                             loss = cal_loss_avg(loss)

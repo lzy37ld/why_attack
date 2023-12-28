@@ -14,6 +14,7 @@ from print_color import print
 import json
 import time
 from torch.utils.data import Dataset
+from itertools import chain, repeat
 
 
 
@@ -33,6 +34,30 @@ PROMPT_DICT = {
 }
 
 
+
+def select_gt_zero_reward_indexes(lst,interval=1):
+    selected_indexes = []
+    for i in range(0, len(lst), interval):
+        # 获取当前组的元素和对应索引
+        group = lst[i:i+interval]
+        group_indexes = list(range(i, min(i+interval, len(lst))))
+
+        # 检查组内是否有大于0的元素
+        positive_indexes = [idx for idx, val in zip(group_indexes, group) if val > 0]
+
+        # 如果有大于0的元素，选取第一个；否则，选取组内的第一个元素
+        selected_index = positive_indexes[0] if positive_indexes else group_indexes[0]
+        selected_indexes.append(selected_index)
+
+    return selected_indexes
+
+
+def repeat_texts_l(l,repeat_times=1):
+    return list(chain.from_iterable(repeat(item, repeat_times) for item in l))
+
+
+
+
 def get_data(data_args):
     if data_args.prompt_type!= "q_p":
         raise NotImplementedError()
@@ -43,7 +68,9 @@ def get_data(data_args):
     with open(split_path) as f:
         splits = json.load(f)
     list_qs = []
-    for q in splits[data_args.split]:
+    q_s = splits[data_args.split]
+    q_s = sorted(q_s)
+    for q in q_s:
         list_qs.append(dict(q = q, target = all_queries[q]))
     print("****************")
     print(list_qs[0])
@@ -101,7 +128,10 @@ def main(config: "DictConfig"):
     s_p_t_dir = config.s_p_t_dir
     if config.prompt_way == "prompter":
         promptway_name = config.prompt_way + "_" + config.data_args.prompt_type
-        s_p_t_dir = os.path.join(s_p_t_dir,f"{config.data_args.split}|prompter_{config.prompter_lm.show_name}|decode_{config.prompter_lm.generation_configs.name}|promptway_{promptway_name}")
+        decode_way = f"decode_{config.prompter_lm.generation_configs.name}"
+        if config.prompter_lm.generation_configs.num_return_sequences > 1:
+            decode_way += f"_numreturn_{config.prompter_lm.generation_configs.num_return_sequences}"
+        s_p_t_dir = os.path.join(s_p_t_dir,f"{config.data_args.split}|prompter_{config.prompter_lm.show_name}|{decode_way}|promptway_{promptway_name}")
 
     s_p_t_dir = os.path.join(s_p_t_dir,f"{config.target_lm.show_name}|max_new_tokens_{config.target_lm.generation_configs.max_new_tokens}")
     Path(s_p_t_dir).mkdir(exist_ok= True, parents= True)
@@ -110,12 +140,15 @@ def main(config: "DictConfig"):
         save_path = os.path.join(s_p_t_dir,f"targetlm_do_sample_{config.target_lm.generation_configs.do_sample}|append_label_length_{config.append_label_length}.jsonl")
         with open(save_path) as f:
             existed_lines = len(f.readlines())
-        assert existed_lines == 0
     except:
-        pass
+        existed_lines = 0
     fp = jsonlines.open(save_path,"a")
 
     processed_data = get_data(config.data_args)
+    processed_data = processed_data[existed_lines:]
+    print(len(processed_data),'len(processed_data)')
+    if len(processed_data) == 0:
+        return
 
     print(OmegaConf.to_yaml(config), color='red')
     
@@ -160,15 +193,33 @@ def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,
         else:
             raise NotImplementedError()
 
-        assert len(q_s) == len(p_s)
+        assert len(q_s)*config.prompter_lm.generation_configs.num_return_sequences == len(p_s)
+        repeat_q_s = repeat_texts_l(q_s,config.prompter_lm.generation_configs.num_return_sequences)
+        assert len(repeat_q_s) == len(p_s)
+        
 
         label_s_tokens_decode = None
-        target_lm_generations = target_lm_fn.get_target_lm_generation(q_s,p_s,after_sys_tokens = label_s_tokens_decode)
+        # 这里有问题 see   /fs/ess/PAA0201/lzy37ld/why_attack/ckpt/prompter_victim=llama2-7b-chat_prompt_type=q_p_model_name=llama2-base_sample_way_and_n_sample=random_nsample=200_epoch_5/checkpoint-35000-val_analysis
+        target_lm_generations = target_lm_fn.get_target_lm_generation(repeat_q_s,p_s,after_sys_tokens = label_s_tokens_decode)
+        reward_scores = reward_lm_fn(repeat_q_s,target_lm_generations)
+        reward_scores = reward_scores.cpu().tolist()
+        gt_zero_reward_index = select_gt_zero_reward_indexes(reward_scores,interval=config.prompter_lm.generation_configs.num_return_sequences)
+        selected_rewards = [reward_scores[i] for i in gt_zero_reward_index]
+        selected_target_lm_generations = [target_lm_generations[i] for i in gt_zero_reward_index]
+        selected_p_s = [p_s[i] for i in gt_zero_reward_index]
+        assert len(q_s) == len(selected_rewards) == len(selected_target_lm_generations) == len(selected_p_s)
+
+
+
+        p_s = selected_p_s
+        target_lm_generations = selected_target_lm_generations
+        reward_scores = selected_rewards
+
+
+
         ppl_scores = [-1 for _ in range(len(q_s))]
         if config.ppl:
             ppl_scores = target_lm_fn.ppl_run(q_s,p_s)
-        reward_scores = reward_lm_fn(q_s,target_lm_generations)
-        reward_scores = reward_scores.cpu().tolist()
 
         for i in range(len(reward_scores)):
             fp.write(dict(q = q_s[i],p = p_s[i],target_lm_generation = target_lm_generations[i],reward = reward_scores[i],ppl_score = ppl_scores[i],prompter_lm_inputs = prompter_lm_inputs[i]))

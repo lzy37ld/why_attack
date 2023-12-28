@@ -21,16 +21,17 @@
 #!/bin/bash
 
 
-# train_offsets=(0 10 20 30 40 50 60 70 80 90 100 110 120 130 140 160 170 180 190 200 210 240 250 260 270 280 290 300 310 320 330 340 360 370 380 390 400 420 430 440)
-
-# for offset in "${train_offsets[@]}"
-# do
-#     sbatch slurm/run.slurm $offset
-# done
 
 
-for offset in $(seq 0 10 520);
+train_offsets=(200 210 330 340 350 360 370 380 250 320 390)
+for offset in "${train_offsets[@]}"
 do
     sbatch slurm/run.slurm $offset
-    # echo $offset
 done
+
+# for offset in $(seq 0 10 520);
+# do
+#     sbatch slurm/run.slurm $offset
+#     # echo $offset
+# done
+

@@ -24,3 +24,4 @@ n_sample: 200
 sample_way: step
 
 save_dir: ./data
+interval: ???

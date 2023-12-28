@@ -74,11 +74,12 @@ def read_and_dedup(path,config):
 
     with jsonlines.open(path) as f:
         all_lines = list(f)  # 创建一个带有索引的行列表
-    print("if the query dont have 192000 instances, then drop")
+    print(f"if the query dont have {config.interval} instances, then drop")
+    interval=config.interval
     for m in range(10,0,-1):
         try:
-            _ = all_lines[m*192000-1]
-            all_lines = all_lines[:m*192000]
+            _ = all_lines[m*interval-1]
+            all_lines = all_lines[:m*interval]
             print(f"keep only {m} queries from it")
             break
         except:

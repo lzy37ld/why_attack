@@ -63,7 +63,6 @@ torchrun --nproc_per_node=4 --master_port=1234 train_prompter.py \
     --gradient_accumulation_steps 2 \
     --evaluation_strategy 'no' \
     --save_strategy 'steps' \
-    --save_only_model True \
     --save_steps 5000 \
     --learning_rate 5e-5 \
     --weight_decay 0. \

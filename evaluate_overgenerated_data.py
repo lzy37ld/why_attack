@@ -68,6 +68,7 @@ def main(config: "DictConfig"):
         existed_lines = 0
     # assert existed_lines == 0, "delete it"
     input_data_path = os.path.join(config.data_dir,config.data_prefix.format(offset = config.offset))
+    print(input_data_path)
     if not os.path.exists(input_data_path):
         exit(1)
     # with open(input_data_path) as f:
