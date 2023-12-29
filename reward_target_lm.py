@@ -166,11 +166,12 @@ def create_targetlm(config):
                 self.gen_config = GenerationConfig(**gen_config, **self.gen_kwargs)
 
             @torch.no_grad()
-            def get_target_lm_generation(self, q_s,p_s,num_return_sequences = 1,after_sys_tokens = None):
+            def get_target_lm_generation(self, q_s,p_s,num_return_sequences = -1,after_sys_tokens = None):
                 # q_s : questions  p_s:prompts
 
                 generation_configs = config.target_lm.generation_configs
-                generation_configs.num_return_sequences = num_return_sequences
+                if num_return_sequences != -1:
+                    generation_configs.num_return_sequences = num_return_sequences
                 target_model.create_gen_config(generation_configs)
                 assert len(q_s) == len(p_s)
                 if after_sys_tokens is not None:
@@ -327,6 +328,7 @@ def create_prompterlm(config):
                     print("Add special tokens should be True")
                     try:
                         input_ids = self.tokenizer(batch, return_tensors='pt',padding= True).to(device)
+                        input_ids = self.tokenizer(batch, return_tensors='pt',padding= True).to(self.model.device)
                         output = self.model.generate(**input_ids,generation_config = self.gen_config)
                         output = output[:,input_ids["input_ids"].shape[-1]:]
                         output_text = self.tokenizer.batch_decode(output,skip_special_tokens= True)   
@@ -357,11 +359,12 @@ def create_prompterlm(config):
         prompter_model.requires_grad_(False)
 
         @torch.no_grad()
-        def get_prompter_lm_generation(q_s,num_return_sequences = 1):
+        def get_prompter_lm_generation(q_s,num_return_sequences = -1):
             # q_s : questions  p_s:prompts
 
             generation_configs = config.prompter_lm.generation_configs
-            generation_configs.num_return_sequences = num_return_sequences
+            if num_return_sequences != -1:
+                generation_configs.num_return_sequences = num_return_sequences
             prompter_model.create_gen_config(generation_configs)
             
             generation = prompter_model.prompterlm_run(q_s,device = prompter_model_device)

@@ -194,6 +194,7 @@ def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,
             raise NotImplementedError()
 
         assert len(q_s)*config.prompter_lm.generation_configs.num_return_sequences == len(p_s)
+        print("prompter lm num_returns",config.prompter_lm.generation_configs.num_return_sequences)
         repeat_q_s = repeat_texts_l(q_s,config.prompter_lm.generation_configs.num_return_sequences)
         assert len(repeat_q_s) == len(p_s)
         
