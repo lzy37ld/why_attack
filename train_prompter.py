@@ -67,6 +67,8 @@ class TrainingArguments(transformers.TrainingArguments):
         default=512,
         metadata={"help": "Maximum sequence length. Sequences will be right padded (and possibly truncated)."},
     )
+    ppl_ratio: float = field(default=0.1, metadata={"help": "ratio of ppl loss"})
+    ppl_loss: bool = field(default=False, metadata={"help": "If calculate ppl_loss"})
 
 
 def smart_tokenizer_and_embedding_resize(
@@ -233,9 +235,31 @@ def train():
         tokenizer=tokenizer,
         model=model,
     )
-
+    
     data_module = make_supervised_data_module(tokenizer=tokenizer, data_args=data_args)
-    trainer = Trainer(model=model, tokenizer=tokenizer, args=training_args, **data_module)
+    class CustomTrainer(Trainer):
+        def compute_loss(self, model, inputs, return_outputs=False):
+
+            outputs = model(**inputs)
+            loss = outputs["loss"] if isinstance(outputs, dict) else outputs[0]
+            
+            if self.ppl_loss:
+                ppl_inputs = copy.deepcopy(inputs)
+                ppl_inputs["labels"] = torch.where(ppl_inputs["labels"] == self.tokenizer.eos_token_id, torch.tensor(-100), ppl_inputs["labels"])
+                ppl_outputs = model_ppl(**ppl_inputs)
+                ppl_loss = ppl_outputs["loss"] if isinstance(ppl_outputs, dict) else ppl_outputs[0]
+                loss = ppl_loss * self.ppl_ratio + loss
+            
+
+
+            return (loss, outputs) if return_outputs else loss
+
+    trainer = CustomTrainer(model=model, tokenizer=tokenizer, args=training_args, **data_module)
+    if training_args.ppl_loss:
+        model_ppl = copy.deepcopy(model)
+        model_ppl.to(f"cuda:{training_args.local_rank}")
+    trainer.ppl_loss = training_args.ppl_loss
+    trainer.ppl_ratio = training_args.ppl_ratio
     trainer.train()
     # trainer.save_state()
     trainer.save_model(output_dir=training_args.output_dir)
