@@ -10,12 +10,15 @@ model_name=llama2-base
 split_path=""
 sampled_queries=""
 
-victim_model="vicuna-7b-chat-v1.5"
-sample_way_and_n_sample="step_nsample=200"
+victim_model="llama2-7b-chat"
+sample_way_and_n_sample="loss_100_nsample=200"
 split_path="data/train_val_test.json"
 # step | loss_100 | random
 sampled_queries="data/success_JB_victimmodel=${victim_model}_sampleway=${sample_way_and_n_sample}.json"
 num_train_epochs=5
+# default ppl_ratio=0.1
+ppl_ratio=0.1
+ppl_loss=true
 
 if [[ $sampled_queries == *"$sample_way_and_n_sample"* ]]; then
   echo "'$sample_way_and_n_sample' is in '$sampled_queries'"
@@ -31,8 +34,11 @@ else
   exit 1
 fi
 
-
-export WANDB_NAME=prompter_victim=${victim_model}_prompt_type=${prompt_type}_model_name=${model_name}_sample_way_and_n_sample=${sample_way_and_n_sample}_epoch_${num_train_epochs}
+output_dir=prompter_victim=${victim_model}_prompt_type=${prompt_type}_model_name=${model_name}_sample_way_and_n_sample=${sample_way_and_n_sample}_epoch_${num_train_epochs}
+if [ "$ppl_loss" = true ]; then
+    output_dir="${output_dir}_ppl_ratio=${ppl_ratio}"
+fi
+export WANDB_NAME=${output_dir}
 base_ckpt=$WHY_ATTACK_CKPT
 base_data=$WHY_ATTACK_DATA
 
@@ -45,7 +51,7 @@ if [ -z "$base_data" ]; then
 fi
 
 
-output_dir=$base_ckpt/prompter_victim=${victim_model}_prompt_type=${prompt_type}_model_name=${model_name}_sample_way_and_n_sample=${sample_way_and_n_sample}_epoch_${num_train_epochs}/
+output_dir=$base_ckpt/${output_dir}/
 
 # no evaluation
 echo "no evaluation"
@@ -72,4 +78,6 @@ torchrun --nproc_per_node=4 --master_port=1234 train_prompter.py \
     --fsdp_transformer_layer_cls_to_wrap 'LlamaDecoderLayer' \
     --tf32 True \
 	  --report_to wandb \
-	  --prompt_type $prompt_type
+	  --prompt_type $prompt_type \
+    --ppl_ratio $ppl_ratio \
+    --ppl_loss $ppl_loss
