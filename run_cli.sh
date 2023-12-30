@@ -105,9 +105,13 @@ python evaluate_overgenerated_data.py prompt_way=own batch_size=48 offset=$offse
 
 # filter_overgenerated_data
 
-python filter_overgenerated_data.py evaluated_data_path_template="/users/PAA0201/lzy37ld/why_attack_lzy/s_p_t_evaluate/llama2-7b-chat|max_new_tokens_60/\{offset\}|promptway_own|targetlm_do_sample_False|append_label_length_-1.jsonl" evaluated_model=llama2-7b-chat n_sample=200 sample_way=step
-python filter_overgenerated_data.py evaluated_data_path_template="/users/PAA0201/lzy37ld/why_attack_lzy/s_p_t_evaluate/llama2-7b-chat|max_new_tokens_60/\{offset\}|promptway_own|targetlm_do_sample_False|append_label_length_-1.jsonl" evaluated_model=llama2-7b-chat n_sample=200 sample_way=random
-python filter_overgenerated_data.py evaluated_data_path_template="/users/PAA0201/lzy37ld/why_attack_lzy/s_p_t_evaluate/llama2-7b-chat|max_new_tokens_60/\{offset\}|promptway_own|targetlm_do_sample_False|append_label_length_-1.jsonl" evaluated_model=llama2-7b-chat n_sample=200 sample_way=loss_100
+python filter_overgenerated_data.py evaluated_data_path_template="/fs/ess/PAA0201/lzy37ld/why_attack/data/s_p_t_evaluate/llama2-7b-chat|max_new_tokens_60/\{offset\}|promptway_own|targetlm_do_sample_False|append_label_length_-1.jsonl" evaluated_model=llama2-7b-chat n_sample=200 sample_way=step +interval=192000
+python filter_overgenerated_data.py evaluated_data_path_template="/fs/ess/PAA0201/lzy37ld/why_attack/data/s_p_t_evaluate/llama2-7b-chat|max_new_tokens_60/\{offset\}|promptway_own|targetlm_do_sample_False|append_label_length_-1.jsonl" evaluated_model=llama2-7b-chat n_sample=200 sample_way=random +interval=192000
+python filter_overgenerated_data.py evaluated_data_path_template="/fs/ess/PAA0201/lzy37ld/why_attack/data/s_p_t_evaluate/llama2-7b-chat|max_new_tokens_60/\{offset\}|promptway_own|targetlm_do_sample_False|append_label_length_-1.jsonl" evaluated_model=llama2-7b-chat n_sample=200 sample_way=loss_100 +interval=192000
+
+python filter_overgenerated_data.py evaluated_data_path_template="/fs/ess/PAA0201/lzy37ld/why_attack/data/s_p_t_evaluate/vicuna-7b-chat-v1.5|max_new_tokens_60/\{offset\}|promptway_own|targetlm_do_sample_False|append_label_length_-1.jsonl" evaluated_model=vicuna-7b-chat-v1.5 n_sample=200 sample_way=step +interval=64000
+python filter_overgenerated_data.py evaluated_data_path_template="/fs/ess/PAA0201/lzy37ld/why_attack/data/s_p_t_evaluate/vicuna-7b-chat-v1.5|max_new_tokens_60/\{offset\}|promptway_own|targetlm_do_sample_False|append_label_length_-1.jsonl" evaluated_model=vicuna-7b-chat-v1.5 n_sample=200 sample_way=random +interval=64000
+python filter_overgenerated_data.py evaluated_data_path_template="/fs/ess/PAA0201/lzy37ld/why_attack/data/s_p_t_evaluate/vicuna-7b-chat-v1.5|max_new_tokens_60/\{offset\}|promptway_own|targetlm_do_sample_False|append_label_length_-1.jsonl" evaluated_model=vicuna-7b-chat-v1.5 n_sample=200 sample_way=loss_100 +interval=64000
 
 
 python split_train_test_val.py "success_jb_path='data/success_JB_victimmodel=llama2-7b-chat_sampleway=loss_100_nsample=200.json'"

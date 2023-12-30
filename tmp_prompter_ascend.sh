@@ -10,13 +10,12 @@ model_name=llama2-base
 split_path=""
 sampled_queries=""
 
-victim_model="llama2-7b-chat"
+victim_model="vicuna-7b-chat-v1.5"
+sample_way_and_n_sample="step_nsample=200"
 split_path="data/train_val_test.json"
 # step | loss_100 | random
-sampled_queries="data/success_JB_victimmodel=llama2-7b-chat_sampleway=step_nsample=200.json"
-sample_way_and_n_sample="step_nsample=200"
+sampled_queries="data/success_JB_victimmodel=${victim_model}_sampleway=${sample_way_and_n_sample}.json"
 num_train_epochs=5
-
 
 if [[ $sampled_queries == *"$sample_way_and_n_sample"* ]]; then
   echo "'$sample_way_and_n_sample' is in '$sampled_queries'"
@@ -72,5 +71,5 @@ torchrun --nproc_per_node=4 --master_port=1234 train_prompter.py \
     --fsdp "full_shard auto_wrap" \
     --fsdp_transformer_layer_cls_to_wrap 'LlamaDecoderLayer' \
     --tf32 True \
-	--report_to wandb \
-	--prompt_type $prompt_type
+	  --report_to wandb \
+	  --prompt_type $prompt_type
