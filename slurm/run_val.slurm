@@ -4,7 +4,7 @@
 #SBATCH --ntasks-per-node=1          # crucial - only 1 task per dist per node!
 #SBATCH --cpus-per-task=2           # number of cores per tasks
 #SBATCH --gres=gpu:1                 # number of gpus
-#SBATCH --time 3:00:00               # maximum execution time (HH:MM:SS)
+#SBATCH --time 10:00:00               # maximum execution time (HH:MM:SS)
 #SBATCH --output=%x-%j.out           # output file name
 #SBATCH --partition=preemptible
 

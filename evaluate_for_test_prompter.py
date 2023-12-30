@@ -33,7 +33,19 @@ PROMPT_DICT = {
     ),
 }
 
+def select_max_reward_indexes(lst, interval=1):
+    selected_indexes = []
+    for i in range(0, len(lst), interval):
+        # 获取当前组的元素和对应索引
+        group = lst[i:i+interval]
+        group_indexes = list(range(i, min(i+interval, len(lst))))
 
+        # 找到组内最大元素的索引
+        max_value_index = group_indexes[group.index(max(group))]
+
+        selected_indexes.append(max_value_index)
+
+    return selected_indexes
 
 def select_gt_zero_reward_indexes(lst,interval=1):
     selected_indexes = []
@@ -116,14 +128,13 @@ def do_reps(
 @hydra.main(config_path="./myconfig", config_name="config_prompter_evaluate")
 def main(config: "DictConfig"):
 
-    print(OmegaConf.to_yaml(config), color='red')
-
 
     start_time = time.time()
     Path(config.s_p_t_dir).mkdir(exist_ok= True, parents= True)
 
     config.reward_lm.batch_size = config.batch_size
     config.target_lm.batch_size = config.batch_size
+    config.prompter_lm.batch_size = config.batch_size
 
     s_p_t_dir = config.s_p_t_dir
     if config.prompt_way == "prompter":
@@ -180,6 +191,9 @@ def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,
     for batch in get_batch(processed_data,config.batch_size):
         batch = attack_collate_fn(batch)
         q_s = batch["q"]
+        print("*"*50)
+        print("This is prompter lm")
+        
         if config.prompt_way == "prompter":
             # if config.data_args.prompt_type == "q_target_lm_generation_p":
             #     for_prompter_s = batch["target_lm_generation"]
@@ -200,11 +214,14 @@ def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,
         
 
         label_s_tokens_decode = None
-        # 这里有问题 see   /fs/ess/PAA0201/lzy37ld/why_attack/ckpt/prompter_victim=llama2-7b-chat_prompt_type=q_p_model_name=llama2-base_sample_way_and_n_sample=random_nsample=200_epoch_5/checkpoint-35000-val_analysis
+        print("*"*50)
+        print("This is target lm")
         target_lm_generations = target_lm_fn.get_target_lm_generation(repeat_q_s,p_s,after_sys_tokens = label_s_tokens_decode)
+        print("*"*50)
+        print("This is reward lm")
         reward_scores = reward_lm_fn(repeat_q_s,target_lm_generations)
         reward_scores = reward_scores.cpu().tolist()
-        gt_zero_reward_index = select_gt_zero_reward_indexes(reward_scores,interval=config.prompter_lm.generation_configs.num_return_sequences)
+        gt_zero_reward_index = select_max_reward_indexes(reward_scores,interval=config.prompter_lm.generation_configs.num_return_sequences)
         selected_rewards = [reward_scores[i] for i in gt_zero_reward_index]
         selected_target_lm_generations = [target_lm_generations[i] for i in gt_zero_reward_index]
         selected_p_s = [p_s[i] for i in gt_zero_reward_index]

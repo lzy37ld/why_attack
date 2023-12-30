@@ -5,5 +5,5 @@ generation_configs:
   num_return_sequences: 1
   top_p: null
   top_k: null
-  num_beams: 3
+  num_beams: 50
   name: beam_search

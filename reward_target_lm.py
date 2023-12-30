@@ -192,9 +192,10 @@ def create_targetlm(config):
                     if self.after_sys_tokens is not None:
                         # space here is important!!
                         batch = [batch[i] + " " + self.after_sys_tokens[i] for i in range(len(batch))]
-                    print(batch[0])
-                    print(self.tokenizer.decode(self.tokenizer.encode(batch[0])))
-                    print("Add special tokens should be True")
+                    if i < 2:
+                        print(batch[0])
+                        print(self.tokenizer.decode(self.tokenizer.encode(batch[0])))
+                        print("Add special tokens should be True")
                     try:
                         input_ids = self.tokenizer(batch, return_tensors='pt',padding= True).to(device)
                         output = self.model.generate(**input_ids,generation_config = self.gen_config)
@@ -231,9 +232,10 @@ def create_targetlm(config):
                     batch_inputs = q_s[i: i +batch_size]
                     batch_outputs = p_s[i: i +batch_size]
                     batch = [self.ppl_template.format(input = batch_inputs[index], prompt = batch_outputs[index]) for index in range(len(batch_inputs))]
-                    print(batch[0])
-                    print(self.tokenizer.decode(self.tokenizer.encode(batch[0])))
-                    print("Add special tokens should be True")
+                    if i < 2:
+                        print(batch[0])
+                        print(self.tokenizer.decode(self.tokenizer.encode(batch[0])))
+                        print("Add special tokens should be True")
                     try:
                         input_ids = self.tokenizer(batch, return_tensors='pt',padding= True).to(device)
                         adv_batchs = batch_outputs
@@ -323,12 +325,12 @@ def create_prompterlm(config):
                 for i in range(0,len(q_s),batch_size):    
                     batch_inputs = q_s[i: i +batch_size]
                     batch = [self.template.format(input = batch_inputs[index]) for index in range(len(batch_inputs))]
-                    print(batch[0])
-                    print(self.tokenizer.decode(self.tokenizer.encode(batch[0])))
-                    print("Add special tokens should be True")
+                    if i < 2:
+                        print(batch[0])
+                        print(self.tokenizer.decode(self.tokenizer.encode(batch[0])))
+                        print("Add special tokens should be True")
                     try:
                         input_ids = self.tokenizer(batch, return_tensors='pt',padding= True).to(device)
-                        input_ids = self.tokenizer(batch, return_tensors='pt',padding= True).to(self.model.device)
                         output = self.model.generate(**input_ids,generation_config = self.gen_config)
                         output = output[:,input_ids["input_ids"].shape[-1]:]
                         output_text = self.tokenizer.batch_decode(output,skip_special_tokens= True)   

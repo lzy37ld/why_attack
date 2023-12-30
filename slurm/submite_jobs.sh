@@ -23,7 +23,7 @@
 
 
 
-train_offsets=(200 210 330 340 350 360 370 380 250 320 390)
+train_offsets=(250 320 390)
 for offset in "${train_offsets[@]}"
 do
     sbatch slurm/run.slurm $offset
