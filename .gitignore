@@ -13,6 +13,6 @@ analysis*/
 results*/
 data/
 .nfs*
-prompter_test_results/
 stats*/
 *analysis/
+*_results
