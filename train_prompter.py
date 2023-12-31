@@ -22,6 +22,7 @@ import transformers
 
 from torch.utils.data import Dataset
 from transformers import Trainer
+import torch.nn.functional as F
 import json
 # from accelerate.utils import set_seed
 # set_seed(42)
@@ -46,6 +47,18 @@ PROMPT_DICT = {
     ),
 }
 
+# https://github.com/facebookresearch/text-adversarial-attack/blob/5170ad0ef7e25758df394c4323b356e8615e61e4/whitebox_attack.py#L48
+def log_perplexity(logits, coeffs, position):
+    shift_logits = logits[:, :-1, :].contiguous()
+    shift_coeffs = coeffs[:, 1:, :].contiguous()
+    shift_logits = shift_logits[:, :, :shift_coeffs.size(2)]
+    # only calculate loss for continuation not for instruction
+    position_for_loss = position != torch.tensor(-100)
+    position_for_loss = position_for_loss[:,:-1]
+    B_T = -(shift_coeffs * F.log_softmax(shift_logits, dim=-1)).sum(-1)
+    B_T_for_loss = B_T[position_for_loss]
+    return B_T_for_loss.mean()
+
 
 @dataclass
 class ModelArguments:
@@ -57,6 +70,7 @@ class DataArguments:
     sampled_queries: str = field(default=None, metadata={"help": "Path to the sampled queries."})
     split_path: str = field(default=None, metadata={"help": "Path to the split queries."})
     prompt_type: str = field(default="q_r", metadata = {"help": "chose which type to use"})
+    debug_data: bool  = field(default=False, metadata = {"help": "chose which type to use"})
 
 
 @dataclass
@@ -151,6 +165,8 @@ class SupervisedDataset(Dataset):
 
         
         list_data_dict = []
+        if data_args.debug_data:
+            train_splits = train_splits[:1]
         for q in train_splits:
             list_data_dict.extend(sampled_queries[q])
         
@@ -242,13 +258,22 @@ def train():
 
             outputs = model(**inputs)
             loss = outputs["loss"] if isinstance(outputs, dict) else outputs[0]
-            
+            ppl_loss = None
             if self.ppl_loss:
-                ppl_inputs = copy.deepcopy(inputs)
-                ppl_inputs["labels"] = torch.where(ppl_inputs["labels"] == self.tokenizer.eos_token_id, torch.tensor(-100), ppl_inputs["labels"])
-                ppl_outputs = model_ppl(**ppl_inputs)
-                ppl_loss = ppl_outputs["loss"] if isinstance(ppl_outputs, dict) else ppl_outputs[0]
+                # ppl_inputs = copy.deepcopy(inputs)
+                # ppl_inputs["labels"] = torch.where(ppl_inputs["labels"] == self.tokenizer.eos_token_id, torch.tensor(-100), ppl_inputs["labels"])
+                logits = outputs["logits"]
+                samples = F.gumbel_softmax(logits, hard=False,dim=-1)
+                ppl_inputs_embeds = samples @ model_ppl_embedding
+                ppl_outputs = model_ppl(inputs_embeds = ppl_inputs_embeds)
+                ppl_logits = ppl_outputs.logits
+                ppl_loss = log_perplexity(ppl_logits,samples,position = torch.where(inputs["labels"] == self.tokenizer.eos_token_id, torch.tensor(-100), inputs["labels"]))
                 loss = ppl_loss * self.ppl_ratio + loss
+            loss_metric = {"loss":loss.item()}
+            if ppl_loss:
+                loss_metric.update({"ppl_loss":ppl_loss.item()})
+            self.log(loss_metric)
+
             
 
 
@@ -256,8 +281,14 @@ def train():
 
     trainer = CustomTrainer(model=model, tokenizer=tokenizer, args=training_args, **data_module)
     if training_args.ppl_loss:
-        model_ppl = copy.deepcopy(model)
-        model_ppl.to(f"cuda:{training_args.local_rank}")
+        with torch.no_grad():
+            model_ppl = copy.deepcopy(model)
+            model_ppl.requires_grad_(False)
+            model_ppl_embedding = model_ppl.get_input_embeddings()(torch.arange(0, len(tokenizer)).long().to(f"cuda:{training_args.local_rank}"))
+            model_ppl.to(f"cuda:{training_args.local_rank}")
+            model_ppl_embedding.to(f"cuda:{training_args.local_rank}")
+
+
     trainer.ppl_loss = training_args.ppl_loss
     trainer.ppl_ratio = training_args.ppl_ratio
     trainer.train()
