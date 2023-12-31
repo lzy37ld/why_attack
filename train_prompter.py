@@ -258,6 +258,7 @@ def train():
 
             outputs = model(**inputs)
             loss = outputs["loss"] if isinstance(outputs, dict) else outputs[0]
+            loss_metric = {"adv_loss":loss.item()}
             ppl_loss = None
             if self.ppl_loss:
                 # ppl_inputs = copy.deepcopy(inputs)
@@ -269,10 +270,9 @@ def train():
                 ppl_logits = ppl_outputs.logits
                 ppl_loss = log_perplexity(ppl_logits,samples,position = torch.where(inputs["labels"] == self.tokenizer.eos_token_id, torch.tensor(-100), inputs["labels"]))
                 loss = ppl_loss * self.ppl_ratio + loss
-            loss_metric = {"loss":loss.item()}
             if ppl_loss:
                 loss_metric.update({"ppl_loss":ppl_loss.item()})
-            self.log(loss_metric)
+                self.log(loss_metric)
 
             
 
