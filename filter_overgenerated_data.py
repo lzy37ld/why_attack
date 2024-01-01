@@ -80,7 +80,8 @@ def read_and_dedup(path,config):
         try:
             _ = all_lines[m*interval-1]
             all_lines = all_lines[:m*interval]
-            print(f"keep only {m} queries from it")
+            # if one query dont have config.interval instances, then we dont take it for later consideration...
+            print(f"keep only {m} queries for later check")
             break
         except:
             continue
@@ -94,7 +95,7 @@ def read_and_dedup(path,config):
                     # 考虑把target也加进去。。。
                     datas.append(dict(q = q,p = p, loss = loss, reward = reward, target_lm_generation = target_lm_generation, target = target,step = step))
 
-    return datas
+    return datas, set([_["q"] for _ in all_lines])
 
 def get_q_dict(datas,config):
 
@@ -192,6 +193,7 @@ def main(config: "DictConfig"):
     
     queries_with_jb = []
     num_all_queries = 0
+    all_checked_queries = []
     for offset in tqdm(train_offsets):
         path = evaluated_data_path_template.format(offset = offset)
         if os.path.exists(path):
@@ -199,9 +201,10 @@ def main(config: "DictConfig"):
                 if len(f.readlines()) <=0:
                     print(path,"do not have values")
                     continue
-            num_all_queries += 10
-            unfilter_data = read_and_dedup(path,config)
+            unfilter_data,checked_queries = read_and_dedup(path,config)
+            num_all_queries += len(checked_queries)
             queries_with_jb.extend(list(set([_["q"] for _ in unfilter_data])))
+            all_checked_queries.extend(list(checked_queries))
 
             q_dict = get_q_dict(unfilter_data,config)
             q_dict_list.append(q_dict)
@@ -211,6 +214,10 @@ def main(config: "DictConfig"):
     save_path = os.path.join(config.save_dir,f"success_JB_victimmodel={config.evaluated_model}_sampleway={config.sample_way}_nsample={config.n_sample}.json")
     with open(save_path,"w") as f:
         json.dump(combined_dict,f)
+
+    save_path = os.path.join(config.save_dir,f"allchecked_JB_victimmodel={config.evaluated_model}.json")
+    with open(save_path,"w") as f:
+        json.dump({"all_checked_queries": all_checked_queries},f)
 
 
     info_path = os.path.join(config.save_dir,"info.txt")

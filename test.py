@@ -41,5 +41,20 @@
 # print(0)
 
 import json
-with open("/users/PAA0201/lzy37ld/why_attack_lzy/data/success_JB_victimmodel=vicuna-7b-chat-v1.5_sampleway=loss_100_nsample=200.json") as f:
-    print(len(json.load(f).keys()))
+with open("/users/PAA0201/lzy37ld/why_attack_lzy/data/train_val_test.json") as f:
+    data = json.load(f)
+    print(len(data["train"]))
+    print(len(data["val"]))
+    print(len(data["test"]))
+    print(len(data["hard"]))
+    print(len(data["unknown"]))
+
+# with open("/users/PAA0201/lzy37ld/why_attack_lzy/data/success_JB_victimmodel=llama2-7b-chat_sampleway=step_nsample=200.json") as f:
+#     data = json.load(f)
+#     print(len(data))
+
+    
+
+# with open("/users/PAA0201/lzy37ld/why_attack_lzy/data/allchecked_JB_victimmodel=llama2-7b-chat.json") as f:
+#     data = json.load(f)
+#     print(len(data["all_checked_queries"]))

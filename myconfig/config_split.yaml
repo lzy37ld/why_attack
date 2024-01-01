@@ -9,4 +9,5 @@ num_train_queries: 318
 num_eval_queries: rest
 num_test_queries: 150
 success_jb_path: null
+all_checked_q_s: ./data/allchecked_JB_victimmodel=llama2-7b-chat.json
 save_dir: ./data

@@ -5,7 +5,7 @@ set -e
 
 
 split="val"
-checkpoints=(5000 10000 15000 20000 25000 30000 35000)
+checkpoints=(5000 10000 15000 20000 25000 30000 35000 40000)
 sample_ways=(loss_100 random step)
 
 

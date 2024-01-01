@@ -6,7 +6,7 @@
 #SBATCH --gres=gpu:1                 # number of gpus
 #SBATCH --time 24:00:00               # maximum execution time (HH:MM:SS)
 #SBATCH --output=%x-%j.out           # output file name
-
+#SBATCH --partition=preemptible
 
 # sbatch slurm/run.slurm
 srun --jobid $SLURM_JOBID bash -c 'bash run_cli_test.sh'

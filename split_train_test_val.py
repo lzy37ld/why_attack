@@ -22,6 +22,7 @@ def main(config: "DictConfig"):
     with open(config.success_jb_path) as f:
         all_jb_queries = list(json.load(f).keys())
     train_queries = random.sample(all_jb_queries,config.num_train_queries)
+    assert(config.num_train_queries == len(all_jb_queries))
     rest_queries = list(set(all_queries) - set(train_queries))
     test_queries = random.sample(rest_queries,config.num_test_queries)
     val_queries = list(set(rest_queries) - set(test_queries))
@@ -29,6 +30,11 @@ def main(config: "DictConfig"):
     d["train"] = train_queries
     d["test"] = test_queries
     d["val"] = val_queries
+
+    with open(config.all_checked_q_s) as f:
+        all_checked_q_s = json.load(f)["all_checked_queries"]
+    d["hard"]=list(set(all_checked_q_s) - set(train_queries))
+    d["unknown"]=list(set(all_queries) - set(train_queries) -set(d["hard"]))
     pathlib.Path(config.save_dir).mkdir(exist_ok = True, parents = True)
     save_path = os.path.join(config.save_dir,"train_val_test.json")
     with open(save_path,"w") as f:

@@ -17,7 +17,7 @@ split_path="data/train_val_test.json"
 sampled_queries="data/success_JB_victimmodel=${victim_model}_sampleway=${sample_way_and_n_sample}.json"
 num_train_epochs=5
 # default ppl_ratio=0.1
-ppl_ratio=1.0
+ppl_ratio=0.5
 ppl_loss=true
 
 if [[ $sampled_queries == *"$sample_way_and_n_sample"* ]]; then
@@ -86,7 +86,7 @@ echo "no evaluation"
 
 
 
-accelerate launch --config_file myconfig/ds_zero3.yaml --main_process_port 1235 train_prompter.py \
+accelerate launch --config_file myconfig/ds_zero3.yaml --main_process_port 1231 train_prompter.py \
     --model_name_or_path meta-llama/Llama-2-7b-hf \
     --sampled_queries ${sampled_queries} \
     --split_path ${split_path} \
@@ -104,8 +104,6 @@ accelerate launch --config_file myconfig/ds_zero3.yaml --main_process_port 1235 
     --warmup_ratio 0.03 \
     --lr_scheduler_type "cosine" \
     --logging_steps 1 \
-    --fsdp "full_shard auto_wrap" \
-    --fsdp_transformer_layer_cls_to_wrap 'LlamaDecoderLayer' \
     --tf32 True \
 	  --report_to wandb \
 	  --prompt_type $prompt_type \
