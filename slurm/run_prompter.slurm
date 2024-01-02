@@ -12,9 +12,5 @@
 #SBATCH --partition=preemptible
 
 
-export sample_way=$1
-# step | loss_100 | random
-
-
 # sbatch slurm/run.slurm
-srun --jobid $SLURM_JOBID bash -c 'bash tmp_prompter_ascend.sh $sample_way'
+srun --jobid $SLURM_JOBID bash -c 'bash tmp_prompter_ascend.sh'

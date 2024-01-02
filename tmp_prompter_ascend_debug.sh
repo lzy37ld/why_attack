@@ -9,10 +9,12 @@ model_name=llama2-base
 
 split_path=""
 sampled_queries=""
+export sample_way=$1
 
 victim_model="vicuna-7b-chat-v1.5"
 # step | loss_100 | random
-sample_way_and_n_sample="random_nsample=200"
+sample_way_and_n_sample="${sample_way}_nsample=200"
+sample_way_and_n_sample="loss_100_nsample=200"
 split_path="data/train_val_test.json"
 # step | loss_100 | random
 sampled_queries="data/success_JB_victimmodel=${victim_model}_sampleway=${sample_way_and_n_sample}.json"
@@ -57,9 +59,8 @@ output_dir=$base_ckpt/${output_dir}/
 # no evaluation
 echo "no evaluation"
 
-
-
-CUDA_LAUNCH_BLOCKING=1 torchrun --nproc_per_node=4 --master_port=1234 train_prompter.py \
+# torchrun --nproc_per_node=1 --master_port=1234
+torchrun --nproc_per_node=1 --master_port=1234 train_prompter.py \
     --model_name_or_path meta-llama/Llama-2-7b-hf \
     --sampled_queries ${sampled_queries} \
     --split_path ${split_path} \
@@ -84,4 +85,5 @@ CUDA_LAUNCH_BLOCKING=1 torchrun --nproc_per_node=4 --master_port=1234 train_prom
     --save_only_model True \
 	  --prompt_type $prompt_type \
     --ppl_ratio $ppl_ratio \
-    --ppl_loss $ppl_loss
+    --ppl_loss $ppl_loss \
+    --debug_data
