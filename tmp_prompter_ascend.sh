@@ -9,9 +9,11 @@ model_name=llama2-base
 
 split_path=""
 sampled_queries=""
+export sample_way=$1
 
 victim_model="vicuna-7b-chat-v1.5"
-sample_way_and_n_sample="loss_100_nsample=200"
+# step | loss_100 | random
+sample_way_and_n_sample="${sample_way}_nsample=200"
 split_path="data/train_val_test.json"
 # step | loss_100 | random
 sampled_queries="data/success_JB_victimmodel=${victim_model}_sampleway=${sample_way_and_n_sample}.json"
@@ -80,6 +82,7 @@ torchrun --nproc_per_node=4 --master_port=1234 train_prompter.py \
     --fsdp_transformer_layer_cls_to_wrap 'LlamaDecoderLayer' \
     --tf32 True \
 	  --report_to wandb \
+    --save_only_model True \
 	  --prompt_type $prompt_type \
     --ppl_ratio $ppl_ratio \
     --ppl_loss $ppl_loss

@@ -9,9 +9,11 @@ model_name=llama2-base
 
 split_path=""
 sampled_queries=""
+export sample_way=$1
 
 victim_model="llama2-7b-chat"
-sample_way_and_n_sample="loss_100_nsample=200"
+# step | loss_100 | random
+sample_way_and_n_sample="${sample_way}_nsample=200"
 split_path="data/train_val_test.json"
 # step | loss_100 | random
 sampled_queries="data/success_JB_victimmodel=${victim_model}_sampleway=${sample_way_and_n_sample}.json"
@@ -86,7 +88,7 @@ echo "no evaluation"
 
 
 
-accelerate launch --config_file myconfig/ds_zero3_8.yaml --main_process_port 1231 train_prompter.py \
+accelerate launch --config_file myconfig/ds_zero2_8.yaml --main_process_port 1231 train_prompter.py \
     --model_name_or_path meta-llama/Llama-2-7b-hf \
     --sampled_queries ${sampled_queries} \
     --split_path ${split_path} \
