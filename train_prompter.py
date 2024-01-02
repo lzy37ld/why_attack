@@ -265,7 +265,7 @@ def train():
                 # ppl_inputs["labels"] = torch.where(ppl_inputs["labels"] == self.tokenizer.eos_token_id, torch.tensor(-100), ppl_inputs["labels"])
                 logits = outputs["logits"]
                 samples = F.gumbel_softmax(logits, hard=False,dim=-1)
-                ppl_inputs_embeds = samples @ model_ppl_embedding
+                ppl_inputs_embeds = (samples @ model_ppl_embedding).to(torch.bfloat16)
                 ppl_outputs = model_ppl(inputs_embeds = ppl_inputs_embeds)
                 ppl_logits = ppl_outputs.logits
                 ppl_loss = log_perplexity(ppl_logits,samples,position = torch.where(inputs["labels"] == self.tokenizer.eos_token_id, torch.tensor(-100), inputs["labels"]))
@@ -284,8 +284,8 @@ def train():
         with torch.no_grad():
             model_ppl = copy.deepcopy(model)
             model_ppl.requires_grad_(False)
-            model_ppl_embedding = model_ppl.get_input_embeddings()(torch.arange(0, len(tokenizer)).long().to(f"cuda:{training_args.local_rank}"))
             model_ppl.to(f"cuda:{training_args.local_rank}")
+            model_ppl_embedding = model_ppl.get_input_embeddings()(torch.arange(0, len(tokenizer)).long().to(f"cuda:{training_args.local_rank}"))
             model_ppl_embedding.to(f"cuda:{training_args.local_rank}")
 
 
