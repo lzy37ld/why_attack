@@ -245,7 +245,6 @@ def create_targetlm(config):
                         shifted_labels = labels[...,1:].contiguous()
                         shifted_logits = logits[...,:-1,:].contiguous()
                         shifted_logits = shifted_logits.permute(0,2,1)
-                        breakpoint()
                         loss = loss_fct(shifted_logits, shifted_labels)
                         loss = cal_loss_avg(loss)
                         ppl = torch.exp(loss)
