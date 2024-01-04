@@ -231,23 +231,22 @@ def create_targetlm(config):
                 for i in range(0,len(q_s),batch_size):    
                     batch_inputs = q_s[i: i +batch_size]
                     batch_outputs = p_s[i: i +batch_size]
-                    batch = [self.ppl_template.format(input = batch_inputs[index], prompt = batch_outputs[index]) for index in range(len(batch_inputs))]
+                    batch = [self.ppl_template.format(input = batch_inputs[index], prompt = batch_outputs[index]).strip() for index in range(len(batch_inputs))]
                     if i < 2:
                         print(batch[0])
                         print(self.tokenizer.decode(self.tokenizer.encode(batch[0])))
                         print("Add special tokens should be True")
                     try:
                         input_ids = self.tokenizer(batch, return_tensors='pt',padding= True).to(device)
-                        adv_batchs = batch_outputs
-                        adv_ids_attnetion = self.tokenizer(adv_batchs,return_tensors='pt',padding = True, add_special_tokens = False).attention_mask
-                        adv_ids_ends = torch.sum(adv_ids_attnetion,dim=1)
+                        attention_mask = input_ids.attention_mask
                         labels = copy.deepcopy(input_ids.input_ids)
-                        for i, adv_ids_end in enumerate(adv_ids_ends):
-                            end = adv_ids_end
-                            labels[i,:-end] = -100
+                        labels = torch.where(attention_mask == 0, torch.tensor(-100), labels)
                         logits = self.model(**input_ids).logits
-                        logits = logits.permute(0,2,1)
-                        loss = loss_fct(logits, labels)
+                        shifted_labels = labels[...,1:].contiguous()
+                        shifted_logits = logits[...,:-1,:].contiguous()
+                        shifted_logits = shifted_logits.permute(0,2,1)
+                        breakpoint()
+                        loss = loss_fct(shifted_logits, shifted_labels)
                         loss = cal_loss_avg(loss)
                         ppl = torch.exp(loss)
                         outputs_l.extend(ppl.detach().cpu().tolist())
@@ -256,16 +255,13 @@ def create_targetlm(config):
                         single_outputs_l = []
                         for batch_index,single_batch in enumerate(batch):
                             input_ids = self.tokenizer(single_batch, return_tensors='pt',padding= True).to(device)
-                            adv_batchs = batch_outputs
-                            adv_ids_attnetion = self.tokenizer(adv_batchs,return_tensors='pt',padding = True, add_special_tokens = False).attention_mask
-                            adv_ids_ends = torch.sum(adv_ids_attnetion,dim=1)
                             labels = copy.deepcopy(input_ids.input_ids)
-                            for i, adv_ids_end in enumerate(adv_ids_ends):
-                                end = adv_ids_end
-                                labels[i,:-end] = -100
+                            labels = torch.where(attention_mask == 0, torch.tensor(-100), labels)
                             logits = self.model(**input_ids).logits
-                            logits = logits.permute(0,2,1)
-                            loss = loss_fct(logits, labels)
+                            shifted_labels = labels[...,1:].contiguous()
+                            shifted_logits = logits[...,:-1,:].contiguous()
+                            shifted_logits = shifted_logits.permute(0,2,1)
+                            loss = loss_fct(shifted_logits, shifted_labels)
                             loss = cal_loss_avg(loss)
                             ppl = torch.exp(loss)
                             single_outputs_l.extend(ppl.detach().cpu().tolist())
