@@ -232,6 +232,7 @@ def create_targetlm(config):
                     batch_inputs = q_s[i: i +batch_size]
                     batch_outputs = p_s[i: i +batch_size]
                     batch = [self.ppl_template.format(input = batch_inputs[index], prompt = batch_outputs[index]).strip() for index in range(len(batch_inputs))]
+                    # batch = [self.template.format(input = batch_inputs[index], prompt = batch_outputs[index]).strip() for index in range(len(batch_inputs))]
                     if i < 2:
                         print(batch[0])
                         print(self.tokenizer.decode(self.tokenizer.encode(batch[0])))

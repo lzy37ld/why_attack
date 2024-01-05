@@ -12,7 +12,7 @@ sampled_queries=""
 
 victim_model="vicuna-7b-chat-v1.5"
 # step | loss_100 | random
-sample_way_and_n_sample="random_nsample=200"
+sample_way_and_n_sample="step_nsample=200"
 split_path="data/train_val_test.json"
 # step | loss_100 | random
 sampled_queries="data/success_JB_victimmodel=${victim_model}_sampleway=${sample_way_and_n_sample}.json"
@@ -58,8 +58,8 @@ output_dir=$base_ckpt/${output_dir}/
 echo "no evaluation"
 
 
-
-CUDA_LAUNCH_BLOCKING=1 torchrun --nproc_per_node=4 --master_port=1234 train_prompter.py \
+export CUDA_VISIBLE_DEVICES=0,1,2,3
+CUDA_LAUNCH_BLOCKING=1 torchrun --nproc_per_node=4 --master_port=1238 train_prompter.py \
     --model_name_or_path meta-llama/Llama-2-7b-hf \
     --sampled_queries ${sampled_queries} \
     --split_path ${split_path} \

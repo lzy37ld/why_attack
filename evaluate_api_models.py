@@ -8,17 +8,6 @@ import backoff
 from tqdm import tqdm
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
-
-
-class NpEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, np.integer):
-            return int(obj)
-        if isinstance(obj, np.floating):
-            return float(obj)
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        return json.JSONEncoder.default(self, obj)
     
 class OpenaiModel():
     def __init__(self, model_name="gpt-3.5-turbo", add_system_prompt=True, checker = None) -> None:

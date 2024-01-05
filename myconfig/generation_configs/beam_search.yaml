@@ -6,4 +6,5 @@ generation_configs:
   top_p: null
   top_k: null
   num_beams: 50
+  repetition_penalty: 1.0
   name: beam_search

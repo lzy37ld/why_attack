@@ -130,3 +130,10 @@ see_prompter_ascend.sh
 see run_cli_validation.sh
 # validation
 # validation
+
+
+# run ppl for all queries
+# run ppl for all queries
+python evalute_for_ppl.py target_lm=mistral-instruct data_args.split=${split} ppl=true s_p_t_dir=$s_p_t_dir
+# run ppl for all queries
+# run ppl for all queries

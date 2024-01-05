@@ -9,7 +9,8 @@
 #SBATCH --mail-type=ALL                          # send email for all notifications
 #SBATCH --mail-user=lzy37ld@gmail.com       # your email
 #SBATCH --mem=300G
-#SBATCH --partition=preemptible
+###SBATCH --partition=preemptible
+#SBATCH --exclude=a0018,a0017,a0006
 
 # sbatch slurm/run.slurm
 srun --jobid $SLURM_JOBID bash -c 'bash tmp_prompter_ascend_ppl.sh'

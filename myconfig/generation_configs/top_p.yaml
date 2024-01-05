@@ -5,4 +5,5 @@ generation_configs:
   num_return_sequences: 1
   top_p: 0.9
   top_k: null
+  repetition_penalty: 1.0
   name: top_p

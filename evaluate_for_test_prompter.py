@@ -142,13 +142,22 @@ def main(config: "DictConfig"):
         decode_way = f"decode_{config.prompter_lm.generation_configs.name}"
         if config.prompter_lm.generation_configs.num_return_sequences > 1:
             decode_way += f"_numreturn_{config.prompter_lm.generation_configs.num_return_sequences}"
+        if config.prompter_lm.generation_configs.repetition_penalty > 1:
+            decode_way += f"_rep_{config.prompter_lm.generation_configs.repetition_penalty}"
         s_p_t_dir = os.path.join(s_p_t_dir,f"{config.data_args.split}|prompter_{config.prompter_lm.show_name}|{decode_way}|promptway_{promptway_name}")
-
-    s_p_t_dir = os.path.join(s_p_t_dir,f"{config.target_lm.show_name}|max_new_tokens_{config.target_lm.generation_configs.max_new_tokens}")
+        if config.q_rep!=1:
+            s_p_t_dir += "|" + f"q_rep_{config.q_rep}"
+        if config.w_q_prefix:
+            s_p_t_dir += "|" + f"w_q_prefix_{config.w_q_prefix}"
+    if not config.target_lm.model_name.startswith("gpt-"):
+        s_p_t_dir = os.path.join(s_p_t_dir,f"{config.target_lm.show_name}|max_new_tokens_{config.target_lm.generation_configs.max_new_tokens}")
+    else:
+        s_p_t_dir = os.path.join(s_p_t_dir,f"{config.target_lm.show_name}")
     Path(s_p_t_dir).mkdir(exist_ok= True, parents= True)
 
+    # save_path = os.path.join(s_p_t_dir,f"targetlm_do_sample_{config.target_lm.generation_configs.do_sample}|append_label_length_{config.append_label_length}.jsonl")
+    save_path = os.path.join(s_p_t_dir,f"targetlm.jsonl")
     try:
-        save_path = os.path.join(s_p_t_dir,f"targetlm_do_sample_{config.target_lm.generation_configs.do_sample}|append_label_length_{config.append_label_length}.jsonl")
         with open(save_path) as f:
             existed_lines = len(f.readlines())
     except:
@@ -168,7 +177,11 @@ def main(config: "DictConfig"):
         # only for selecting tokens at the front
         target_model_tokenizer = set_pad_token(AutoTokenizer.from_pretrained(config.target_lm.model_name,padding_side = "right"))
     reward_lm_fn = create_reward(config)
-    target_lm_fn = create_targetlm(config)
+    if config.target_lm.model_name.startswith("gpt-"):
+        from utility import OpenaiModel
+        target_lm_fn = OpenaiModel(model_name=config.target_lm.model_name,system_message = config.target_lm.system_message,template = config.target_lm.template)
+    else:        
+        target_lm_fn = create_targetlm(config)
     prompter_lm_fn = None
     if config.prompt_way == "prompter":
         prompter_lm_fn = create_prompterlm(config)
@@ -191,6 +204,9 @@ def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,
     for batch in get_batch(processed_data,config.batch_size):
         batch = attack_collate_fn(batch)
         q_s = batch["q"]
+        q_s = [" ".join([_] * config.q_rep) for _ in q_s]
+        if config.w_q_prefix:
+            q_s = [config.q_prefix + " " + _ for _ in q_s]
         print("*"*50)
         print("This is prompter lm")
         
@@ -210,37 +226,33 @@ def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,
         assert len(q_s)*config.prompter_lm.generation_configs.num_return_sequences == len(p_s)
         print("prompter lm num_returns",config.prompter_lm.generation_configs.num_return_sequences)
         repeat_q_s = repeat_texts_l(q_s,config.prompter_lm.generation_configs.num_return_sequences)
+        repeat_prompter_lm_inputs = repeat_texts_l(prompter_lm_inputs,config.prompter_lm.generation_configs.num_return_sequences)
         assert len(repeat_q_s) == len(p_s)
         
 
-        label_s_tokens_decode = None
         print("*"*50)
         print("This is target lm")
-        target_lm_generations = target_lm_fn.get_target_lm_generation(repeat_q_s,p_s,after_sys_tokens = label_s_tokens_decode)
+        target_lm_generations = target_lm_fn.get_target_lm_generation(repeat_q_s,p_s)
         print("*"*50)
         print("This is reward lm")
         reward_scores = reward_lm_fn(repeat_q_s,target_lm_generations)
         reward_scores = reward_scores.cpu().tolist()
-        gt_zero_reward_index = select_max_reward_indexes(reward_scores,interval=config.prompter_lm.generation_configs.num_return_sequences)
-        selected_rewards = [reward_scores[i] for i in gt_zero_reward_index]
-        selected_target_lm_generations = [target_lm_generations[i] for i in gt_zero_reward_index]
-        selected_p_s = [p_s[i] for i in gt_zero_reward_index]
-        assert len(q_s) == len(selected_rewards) == len(selected_target_lm_generations) == len(selected_p_s)
+        # gt_zero_reward_index = select_max_reward_indexes(reward_scores,interval=config.prompter_lm.generation_configs.num_return_sequences)
+        # selected_rewards = [reward_scores[i] for i in gt_zero_reward_index]
+        # selected_target_lm_generations = [target_lm_generations[i] for i in gt_zero_reward_index]
+        # selected_p_s = [p_s[i] for i in gt_zero_reward_index]
+        # assert len(q_s) == len(selected_rewards) == len(selected_target_lm_generations) == len(selected_p_s)
+        # p_s = selected_p_s
+        # target_lm_generations = selected_target_lm_generations
+        # reward_scores = selected_rewards
 
-
-
-        p_s = selected_p_s
-        target_lm_generations = selected_target_lm_generations
-        reward_scores = selected_rewards
-
-
-
-        ppl_scores = [-1 for _ in range(len(q_s))]
+        ppl_q_p = [None for _ in range(len(repeat_q_s))]
         if config.ppl:
-            ppl_scores = target_lm_fn.ppl_run(q_s,p_s)
+            print("This is ppl run")
+            ppl_q_p = target_lm_fn.ppl_run(repeat_q_s,p_s)
 
         for i in range(len(reward_scores)):
-            fp.write(dict(q = q_s[i],p = p_s[i],target_lm_generation = target_lm_generations[i],reward = reward_scores[i],ppl_score = ppl_scores[i],prompter_lm_inputs = prompter_lm_inputs[i]))
+            fp.write(dict(q = repeat_q_s[i],p = p_s[i],target_lm_generation = target_lm_generations[i],reward = reward_scores[i],ppl_q_p = ppl_q_p[i],prompter_lm_inputs = repeat_prompter_lm_inputs[i]))
         
         progress_keys.update(config.batch_size)
 
