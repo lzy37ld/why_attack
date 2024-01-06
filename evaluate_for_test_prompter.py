@@ -147,8 +147,8 @@ def main(config: "DictConfig"):
         s_p_t_dir = os.path.join(s_p_t_dir,f"{config.data_args.split}|prompter_{config.prompter_lm.show_name}|{decode_way}|promptway_{promptway_name}")
         if config.q_rep!=1:
             s_p_t_dir += "|" + f"q_rep_{config.q_rep}"
-        if config.w_q_prefix:
-            s_p_t_dir += "|" + f"w_q_prefix_{config.w_q_prefix}"
+        if config.q_prefix.choice in ["long","short","medium"]:
+            s_p_t_dir += "|" + f"q_prefix_{config.q_prefix.choice}"
     if not config.target_lm.model_name.startswith("gpt-"):
         s_p_t_dir = os.path.join(s_p_t_dir,f"{config.target_lm.show_name}|max_new_tokens_{config.target_lm.generation_configs.max_new_tokens}")
     else:
@@ -157,15 +157,11 @@ def main(config: "DictConfig"):
 
     # save_path = os.path.join(s_p_t_dir,f"targetlm_do_sample_{config.target_lm.generation_configs.do_sample}|append_label_length_{config.append_label_length}.jsonl")
     save_path = os.path.join(s_p_t_dir,f"targetlm.jsonl")
-    try:
-        with open(save_path) as f:
-            existed_lines = len(f.readlines())
-    except:
-        existed_lines = 0
+    if os.path.exists(save_path):
+        return
     fp = jsonlines.open(save_path,"a")
 
     processed_data = get_data(config.data_args)
-    processed_data = processed_data[existed_lines:]
     print(len(processed_data),'len(processed_data)')
     if len(processed_data) == 0:
         return
@@ -205,8 +201,8 @@ def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,
         batch = attack_collate_fn(batch)
         q_s = batch["q"]
         q_s = [" ".join([_] * config.q_rep) for _ in q_s]
-        if config.w_q_prefix:
-            q_s = [config.q_prefix + " " + _ for _ in q_s]
+        if config.q_prefix.choice in ["long","short","medium"]:
+            q_s = [config.q_prefix[config.q_prefix.choice] + " " + _ for _ in q_s]
         print("*"*50)
         print("This is prompter lm")
         

@@ -134,6 +134,6 @@ see run_cli_validation.sh
 
 # run ppl for all queries
 # run ppl for all queries
-python evalute_for_ppl.py target_lm=mistral-instruct data_args.split=${split} ppl=true s_p_t_dir=$s_p_t_dir
+python evaluate_for_ppl.py target_lm=llama2-chat data_args.split=all ppl=true s_p_t_dir=./data/q_ppl
 # run ppl for all queries
 # run ppl for all queries
