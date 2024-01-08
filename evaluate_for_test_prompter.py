@@ -15,7 +15,7 @@ import json
 import time
 from torch.utils.data import Dataset
 from itertools import chain, repeat
-
+set_seed(42)
 
 
 PROMPT_DICT = {
@@ -90,9 +90,6 @@ def get_data(data_args):
     return list_qs
 
 
-
-set_seed(42)
-
 def attack_collate_fn(batch):
     collated_batch = {}
     for item in batch:
@@ -157,13 +154,22 @@ def main(config: "DictConfig"):
 
     # save_path = os.path.join(s_p_t_dir,f"targetlm_do_sample_{config.target_lm.generation_configs.do_sample}|append_label_length_{config.append_label_length}.jsonl")
     save_path = os.path.join(s_p_t_dir,f"targetlm.jsonl")
+    exist_lens = 0
     if os.path.exists(save_path):
-        return
+        exist_lens = len(open(save_path).readlines())
+        # if exist_lens != 0:
+        #     print("file exists, so skip")
+        #     return
+            
     fp = jsonlines.open(save_path,"a")
 
     processed_data = get_data(config.data_args)
     print(len(processed_data),'len(processed_data)')
+    exist_lens = exist_lens // config.prompter_lm.generation_configs.num_return_sequences
+    processed_data = processed_data[exist_lens:]
+    print(len(processed_data),'len(processed_data)')
     if len(processed_data) == 0:
+        print("Already get all data, skip")
         return
 
     print(OmegaConf.to_yaml(config), color='red')
@@ -215,7 +221,10 @@ def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,
             #     prompter_lm_inputs = [prompt_template.format(q = q_s[index],target = for_prompter_s[index]) for index in range(len(q_s))]
             if config.data_args.prompt_type == "q_p":
                 prompter_lm_inputs = [prompt_template.format(q = q_s[index]) for index in range(len(q_s))]
+            prompt_lm_start_time = time.time()
             p_s = prompter_lm_fn(prompter_lm_inputs)
+            prompt_lm_end_time = time.time()
+            print('prompt_lm_time for one query',round((prompt_lm_end_time - prompt_lm_start_time)/len(q_s),2))
         else:
             raise NotImplementedError()
 
@@ -243,7 +252,7 @@ def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,
         # reward_scores = selected_rewards
 
         ppl_q_p = [None for _ in range(len(repeat_q_s))]
-        if config.ppl:
+        if config.ppl == True:
             print("This is ppl run")
             ppl_q_p = target_lm_fn.ppl_run(repeat_q_s,p_s)
 
@@ -255,4 +264,7 @@ def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except:
+        print("fail but continue the bash loop")
