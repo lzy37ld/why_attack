@@ -60,7 +60,10 @@ def create_reward(config):
                 self.model = model
                 self.tokenizer= tokenizer
 
-
+            def _reward_run_batch(self,batch,device):
+                input_ids = self.tokenizer(batch, return_tensors='pt',padding= True).to(device)
+                outputs = self.model(**input_ids).end_scores
+                return outputs
 
             def _reward_run(self, q_and_p_s, ans_s, device):
                 outputs_l = []
@@ -71,39 +74,36 @@ def create_reward(config):
                     batch_outputs = ans_s[i: i +batch_size]
                     batch = [self.template.format(model_input = batch_inputs[index], model_output = batch_outputs[index]) for index in range(len(batch_inputs))]
                     try:
-                        input_ids = self.tokenizer(batch, return_tensors='pt',padding= True).to(device)
-                        outputs = self.model(**input_ids).end_scores
-                        outputs_l.append(outputs)
+                        outputs_l.append(self._reward_run_batch(batch,device))
                     except:
-                        print("run one by one")
+                        print("run one by one for _reward_run")
                         single_outputs_l = []
                         for single_batch in batch:
-                            input_ids = self.tokenizer(single_batch, return_tensors='pt',padding= True).to(device)
-                            outputs = self.model(**input_ids).end_scores
-                            single_outputs_l.append(outputs)
+                            single_outputs_l.append(self._reward_run_batch(single_batch,device))
                         outputs_l.extend(single_outputs_l)        
                 return torch.cat(outputs_l,dim = 0).view(-1),outputs_l
             
             def _reward_run_debug(self, q_and_p_s, ans_s, device):
-                outputs_l = []
-                batch_size = self.batch_size
-                for i in range(0,len(q_and_p_s),batch_size):
-                    batch_inputs = q_and_p_s[i: i +batch_size]
-                    batch_outputs = ans_s[i: i +batch_size]
-                    batch = [self.template.format(model_input = batch_inputs[index], model_output = batch_outputs[index]) for index in range(len(batch_inputs))]
-                    try:
-                        input_ids = self.tokenizer(batch, return_tensors='pt',padding= True).to(device)
-                        outputs = self.model(**input_ids).logits[:,-1,0].unsqueeze(-1)
-                        outputs_l.append(outputs)
-                    except:
-                        print("run one by one")
-                        single_outputs_l = []
-                        for single_batch in batch:
-                            input_ids = self.tokenizer(single_batch, return_tensors='pt',padding= True).to(device)
-                            outputs = self.model(**input_ids).logits[:,0,0].unsqueeze(-1)
-                            single_outputs_l.append(outputs)
-                        outputs_l.extend(single_outputs_l)        
-                return torch.cat(outputs_l,dim = 0).view(-1),outputs_l
+                # outputs_l = []
+                # batch_size = self.batch_size
+                # for i in range(0,len(q_and_p_s),batch_size):
+                #     batch_inputs = q_and_p_s[i: i +batch_size]
+                #     batch_outputs = ans_s[i: i +batch_size]
+                #     batch = [self.template.format(model_input = batch_inputs[index], model_output = batch_outputs[index]) for index in range(len(batch_inputs))]
+                #     try:
+                #         input_ids = self.tokenizer(batch, return_tensors='pt',padding= True).to(device)
+                #         outputs = self.model(**input_ids).logits[:,-1,0].unsqueeze(-1)
+                #         outputs_l.append(outputs)
+                #     except:
+                #         print("run one by one")
+                #         single_outputs_l = []
+                #         for single_batch in batch:
+                #             input_ids = self.tokenizer(single_batch, return_tensors='pt',padding= True).to(device)
+                #             outputs = self.model(**input_ids).logits[:,0,0].unsqueeze(-1)
+                #             single_outputs_l.append(outputs)
+                #         outputs_l.extend(single_outputs_l)        
+                # return torch.cat(outputs_l,dim = 0).view(-1),outputs_l
+                pass
             
             def reward_run(self, q_and_p_s, ans_s, device, mode):
                 # "q_and_p_s are 'harmful input + prompt' question + prompt, ans_s are cost_lm's response"
@@ -180,6 +180,13 @@ def create_targetlm(config):
                 target_model.after_sys_tokens = after_sys_tokens
                 generation = target_model.targetlm_run(q_s,p_s,device = self.target_model_device)
                 return generation    
+            
+            def _targetlm_run_batch(self,batch,device):
+                input_ids = self.tokenizer(batch, return_tensors='pt',padding= True).to(device)
+                output = self.model.generate(**input_ids,generation_config = self.gen_config)
+                output = output[:,input_ids["input_ids"].shape[-1]:]
+                output_text = self.tokenizer.batch_decode(output,skip_special_tokens= True) 
+                return output_text
 
             # q_s questions, p_s prompts
             def _targetlm_run(self, q_s, p_s, device):
@@ -196,21 +203,13 @@ def create_targetlm(config):
                         print(batch[0])
                         print(self.tokenizer.decode(self.tokenizer.encode(batch[0])))
                         print("Add special tokens should be True")
-                    try:
-                        input_ids = self.tokenizer(batch, return_tensors='pt',padding= True).to(device)
-                        output = self.model.generate(**input_ids,generation_config = self.gen_config)
-                        output = output[:,input_ids["input_ids"].shape[-1]:]
-                        output_text = self.tokenizer.batch_decode(output,skip_special_tokens= True)   
-                        outputs_l.extend(output_text)
+                    try: 
+                        outputs_l.extend(self._targetlm_run_batch(batch,device))
                     except:
-                        print("run one by one")
+                        print("run one by one for _targetlm_run")
                         single_outputs_l = []
                         for single_batch in batch:
-                            input_ids = self.tokenizer(single_batch, return_tensors='pt',padding= True).to(device)
-                            output = self.model.generate(**input_ids,generation_config = self.gen_config)
-                            output = output[:,input_ids["input_ids"].shape[-1]:]
-                            output_text = self.tokenizer.batch_decode(output,skip_special_tokens= True)   
-                            single_outputs_l.extend(output_text)
+                            single_outputs_l.extend(self._targetlm_run_batch(single_batch,device))
                         outputs_l.extend(single_outputs_l)        
                 return outputs_l
             
@@ -223,6 +222,19 @@ def create_targetlm(config):
             def ppl_run(self,q_s,p_s):
                 ppl = self._ppl_run(q_s, p_s, device = self.target_model_device)
                 return ppl
+            def _ppl_run_batch(self,batch,device):
+                input_ids = self.tokenizer(batch, return_tensors='pt',padding= True).to(device)
+                attention_mask = input_ids.attention_mask
+                labels = copy.deepcopy(input_ids.input_ids)
+                labels = torch.where(attention_mask == 0, torch.tensor(-100), labels)
+                logits = self.model(**input_ids).logits
+                shifted_labels = labels[...,1:].contiguous()
+                shifted_logits = logits[...,:-1,:].contiguous()
+                shifted_logits = shifted_logits.permute(0,2,1)
+                loss = loss_fct(shifted_logits, shifted_labels)
+                loss = cal_loss_avg(loss)
+                ppl = torch.exp(loss)
+                return ppl.detach().cpu().tolist()
 
             # q_s questions, p_s prompts
             def _ppl_run(self, q_s, p_s, device):
@@ -238,33 +250,12 @@ def create_targetlm(config):
                         print(self.tokenizer.decode(self.tokenizer.encode(batch[0])))
                         print("Add special tokens should be True")
                     try:
-                        input_ids = self.tokenizer(batch, return_tensors='pt',padding= True).to(device)
-                        attention_mask = input_ids.attention_mask
-                        labels = copy.deepcopy(input_ids.input_ids)
-                        labels = torch.where(attention_mask == 0, torch.tensor(-100), labels)
-                        logits = self.model(**input_ids).logits
-                        shifted_labels = labels[...,1:].contiguous()
-                        shifted_logits = logits[...,:-1,:].contiguous()
-                        shifted_logits = shifted_logits.permute(0,2,1)
-                        loss = loss_fct(shifted_logits, shifted_labels)
-                        loss = cal_loss_avg(loss)
-                        ppl = torch.exp(loss)
-                        outputs_l.extend(ppl.detach().cpu().tolist())
+                        outputs_l.extend(self._ppl_run_batch(batch,device))
                     except:
-                        print("run one by one")
+                        print("run one by one for _ppl_run")
                         single_outputs_l = []
-                        for batch_index,single_batch in enumerate(batch):
-                            input_ids = self.tokenizer(single_batch, return_tensors='pt',padding= True).to(device)
-                            labels = copy.deepcopy(input_ids.input_ids)
-                            labels = torch.where(attention_mask == 0, torch.tensor(-100), labels)
-                            logits = self.model(**input_ids).logits
-                            shifted_labels = labels[...,1:].contiguous()
-                            shifted_logits = logits[...,:-1,:].contiguous()
-                            shifted_logits = shifted_logits.permute(0,2,1)
-                            loss = loss_fct(shifted_logits, shifted_labels)
-                            loss = cal_loss_avg(loss)
-                            ppl = torch.exp(loss)
-                            single_outputs_l.extend(ppl.detach().cpu().tolist())
+                        for single_batch in batch:
+                            single_outputs_l.extend(self._ppl_run_batch(single_batch,device))
                         outputs_l.extend(single_outputs_l)        
                 return outputs_l
 
@@ -313,6 +304,12 @@ def create_prompterlm(config):
                 
             def create_gen_config(self,gen_config):
                 self.gen_config = GenerationConfig(**gen_config, **self.gen_kwargs)
+            def _prompterlm_run_batch(self,batch,device):
+                input_ids = self.tokenizer(batch, return_tensors='pt',padding= True).to(device)
+                output = self.model.generate(**input_ids,generation_config = self.gen_config)
+                output = output[:,input_ids["input_ids"].shape[-1]:]
+                output_text = self.tokenizer.batch_decode(output,skip_special_tokens= True) 
+                return output_text
 
             # q_s questions, p_s prompts
             def _prompterlm_run(self, q_s, device):
@@ -326,20 +323,12 @@ def create_prompterlm(config):
                         print(self.tokenizer.decode(self.tokenizer.encode(batch[0])))
                         print("Add special tokens should be True")
                     try:
-                        input_ids = self.tokenizer(batch, return_tensors='pt',padding= True).to(device)
-                        output = self.model.generate(**input_ids,generation_config = self.gen_config)
-                        output = output[:,input_ids["input_ids"].shape[-1]:]
-                        output_text = self.tokenizer.batch_decode(output,skip_special_tokens= True)   
-                        outputs_l.extend(output_text)
+                        outputs_l.extend(self._prompterlm_run_batch(batch,device))
                     except:
-                        print("run one by one")
+                        print("run one by one for _prompterlm_run")
                         single_outputs_l = []
                         for single_batch in batch:
-                            input_ids = self.tokenizer(single_batch, return_tensors='pt',padding= True).to(device)
-                            output = self.model.generate(**input_ids,generation_config = self.gen_config)
-                            output = output[:,input_ids["input_ids"].shape[-1]:]
-                            output_text = self.tokenizer.batch_decode(output,skip_special_tokens= True)   
-                            single_outputs_l.extend(output_text)
+                            single_outputs_l.extend(self._prompterlm_run_batch(single_batch,device))
                         outputs_l.extend(single_outputs_l)        
                 return outputs_l
             

@@ -8,6 +8,21 @@ from utility import deter_if_harm
 import numpy as np
 
 
+def find_min_corresponding_b(a, b):
+    """
+    Function to find the minimum value in 'b' at the positions where 'a' has 1.
+    If 'a' has no 1s, it returns -1.
+    """
+    min_val = float('inf')
+    found = False
+
+    for i in range(len(a)):
+        if a[i] == 1:
+            found = True
+            if b[i] < min_val:
+                min_val = b[i]
+
+    return min_val if found else 0
 
 def main(args):
 	q_s_harm = ddict( lambda: ddict(list))
@@ -21,18 +36,22 @@ def main(args):
 			q_s.append(line["q"])
 			harm_scores.append(line["reward"])
 			try:
-				ppl_scores.append(line["ppl_score"])
+				ppl_value = line["ppl_score"]
 			except:
-				ppl_scores.append(line["ppl_q_p"])
+				ppl_value = line["ppl_q_p"]
+				
 			target_lm_generations.append(line["target_lm_generation"])
 			q_s_harm[line["q"]]["harm_scores"].append(line["reward"])
 			q_s_harm[line["q"]]["target_lm_generations"].append(line["target_lm_generation"])
+			if ppl_value is not None:
+				q_s_harm[line["q"]]["ppl"].append(ppl_value)
+				ppl_scores.append(ppl_value)
 
 	all_harms = deter_if_harm(harm_scores,target_lm_generations,determine_way=args.determine_way)
-	print(len(all_harms))
-	ppl_mean = sum(a * b for a, b in zip(all_harms, ppl_scores))/sum(all_harms)
+	print('len(all_harms)',len(all_harms))
 	
 	all_harms_over_qs = []
+	q_ppl = []
 	print('len(q_s_harm)',len(q_s_harm))
 	for q in q_s_harm:
 		# print(len(q_s_harm[q]["harm_scores"]))
@@ -42,17 +61,27 @@ def main(args):
 		else:
 			# print(q)
 			all_harms_over_qs.append(0)
+		if "ppl" in q_s_harm[q]:
+			q_ppl.append(find_min_corresponding_b(q_harms,q_s_harm[q]["ppl"]))
 
 	print("asr_over_all_instances",sum(all_harms)/len(all_harms))
 	print("asr_over_all_qs",sum(all_harms_over_qs)/len(all_harms_over_qs))
-	print("ppl_mean",ppl_mean)
+	# print(q_ppl)
+	print('sum(all_harms_over_qs)',sum(all_harms_over_qs))
+
+	# q_ppl_wo_zero = [_ for _ in q_ppl if _ != 0 ]
+	# print(len(q_ppl_wo_zero))
+	# print(sum(all_harms_over_qs))
+
+	mean_ppl = sum(q_ppl)/sum(all_harms_over_qs)
+	print("ppl average over one instance for each query if it exist one instance to Jailbreak.",mean_ppl)
 	if not args.print_only:
 		Path(args.save_dir).mkdir(exist_ok= True, parents= True)
 		with open(os.path.join(args.save_dir,f"{args.determine_way}|{args.path.split('/')[-1]}"),"w") as f:
 			json.dump(dict(
 						asr_over_all_instances = round(sum(all_harms)/len(all_harms),2),
 						asr_over_all_qs = round(sum(all_harms_over_qs)/len(all_harms_over_qs),2),
-						ppl_mean = ppl_mean
+						ppl_mean = round(mean_ppl,2)
 						),
 						f)
 
