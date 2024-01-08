@@ -146,6 +146,11 @@ def main(config: "DictConfig"):
             s_p_t_dir += "|" + f"q_rep_{config.q_rep}"
         if config.q_prefix.choice in ["long","short","medium"]:
             s_p_t_dir += "|" + f"q_prefix_{config.q_prefix.choice}"
+        if config.q_s_position in ["prompter_lm=processed|target_lm=processed","prompter_lm=raw|target_lm=processed"]:
+            if config.q_s_position == "prompter_lm=raw|target_lm=processed":
+                s_p_t_dir += "|" + f"q_s_position_{config.q_s_position}"
+        else:
+            raise ValueError("The q_s_position is not defined")
     if not config.target_lm.model_name.startswith("gpt-"):
         s_p_t_dir = os.path.join(s_p_t_dir,f"{config.target_lm.show_name}|max_new_tokens_{config.target_lm.generation_configs.max_new_tokens}")
     else:
@@ -205,12 +210,23 @@ def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,
     
     for batch in get_batch(processed_data,config.batch_size):
         batch = attack_collate_fn(batch)
-        q_s = batch["q"]
-        q_s = [" ".join([_] * config.q_rep) for _ in q_s]
+        raw_q_s = batch["q"]
+        processed_q_s = [" ".join([_] * config.q_rep) for _ in batch["q"]]
         if config.q_prefix.choice in ["long","short","medium"]:
-            q_s = [config.q_prefix[config.q_prefix.choice] + " " + _ for _ in q_s]
+            processed_q_s = [config.q_prefix[config.q_prefix.choice] + " " + _ for _ in processed_q_s]
         print("*"*50)
         print("This is prompter lm")
+
+        # if config.q_s_position == "prompter_lm=processed|target_lm=processed":
+        if config.q_s_position == "prompter_lm=raw|target_lm=processed":
+            for_promptlm_q_s = raw_q_s
+            for_targetlm_q_s = processed_q_s
+        elif config.q_s_position == "prompter_lm=processed|target_lm=processed":
+            for_promptlm_q_s = processed_q_s
+            for_targetlm_q_s = processed_q_s
+        else:
+            raise ValueError("The q_s_position is not defined")
+
         
         if config.prompt_way == "prompter":
             # if config.data_args.prompt_type == "q_target_lm_generation_p":
@@ -220,27 +236,27 @@ def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,
             #     for_prompter_s = batch["target"]
             #     prompter_lm_inputs = [prompt_template.format(q = q_s[index],target = for_prompter_s[index]) for index in range(len(q_s))]
             if config.data_args.prompt_type == "q_p":
-                prompter_lm_inputs = [prompt_template.format(q = q_s[index]) for index in range(len(q_s))]
+                prompter_lm_inputs = [prompt_template.format(q = for_promptlm_q_s[index]) for index in range(len(for_promptlm_q_s))]
             prompt_lm_start_time = time.time()
             p_s = prompter_lm_fn(prompter_lm_inputs)
             prompt_lm_end_time = time.time()
-            print('prompt_lm_time for one query',round((prompt_lm_end_time - prompt_lm_start_time)/len(q_s),2))
+            print('prompt_lm_time for one query',round((prompt_lm_end_time - prompt_lm_start_time)/len(for_promptlm_q_s),2))
         else:
             raise NotImplementedError()
 
-        assert len(q_s)*config.prompter_lm.generation_configs.num_return_sequences == len(p_s)
+        assert len(for_promptlm_q_s)*config.prompter_lm.generation_configs.num_return_sequences == len(p_s)
         print("prompter lm num_returns",config.prompter_lm.generation_configs.num_return_sequences)
-        repeat_q_s = repeat_texts_l(q_s,config.prompter_lm.generation_configs.num_return_sequences)
+        repeat_for_targetlm_q_s = repeat_texts_l(for_targetlm_q_s,config.prompter_lm.generation_configs.num_return_sequences)
         repeat_prompter_lm_inputs = repeat_texts_l(prompter_lm_inputs,config.prompter_lm.generation_configs.num_return_sequences)
-        assert len(repeat_q_s) == len(p_s)
+        assert len(repeat_for_targetlm_q_s) == len(p_s)
         
 
         print("*"*50)
         print("This is target lm")
-        target_lm_generations = target_lm_fn.get_target_lm_generation(repeat_q_s,p_s)
+        target_lm_generations = target_lm_fn.get_target_lm_generation(repeat_for_targetlm_q_s,p_s)
         print("*"*50)
         print("This is reward lm")
-        reward_scores = reward_lm_fn(repeat_q_s,target_lm_generations)
+        reward_scores = reward_lm_fn(repeat_for_targetlm_q_s,target_lm_generations)
         reward_scores = reward_scores.cpu().tolist()
         # gt_zero_reward_index = select_max_reward_indexes(reward_scores,interval=config.prompter_lm.generation_configs.num_return_sequences)
         # selected_rewards = [reward_scores[i] for i in gt_zero_reward_index]
@@ -251,13 +267,13 @@ def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,
         # target_lm_generations = selected_target_lm_generations
         # reward_scores = selected_rewards
 
-        ppl_q_p = [None for _ in range(len(repeat_q_s))]
+        ppl_q_p = [None for _ in range(len(repeat_for_targetlm_q_s))]
         if config.ppl == True:
             print("This is ppl run")
-            ppl_q_p = target_lm_fn.ppl_run(repeat_q_s,p_s)
+            ppl_q_p = target_lm_fn.ppl_run(repeat_for_targetlm_q_s,p_s)
 
         for i in range(len(reward_scores)):
-            fp.write(dict(q = repeat_q_s[i],p = p_s[i],target_lm_generation = target_lm_generations[i],reward = reward_scores[i],ppl_q_p = ppl_q_p[i],prompter_lm_inputs = repeat_prompter_lm_inputs[i]))
+            fp.write(dict(q = repeat_for_targetlm_q_s[i],p = p_s[i],target_lm_generation = target_lm_generations[i],reward = reward_scores[i],ppl_q_p = ppl_q_p[i],prompter_lm_inputs = repeat_prompter_lm_inputs[i]))
         
         progress_keys.update(config.batch_size)
 
