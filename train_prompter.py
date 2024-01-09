@@ -24,7 +24,6 @@ from torch.utils.data import Dataset
 from transformers import Trainer
 import torch.nn.functional as F
 import json
-from typing import Union
 
 # from accelerate.utils import set_seed
 # set_seed(42)
@@ -69,7 +68,7 @@ class ModelArguments:
 
 @dataclass
 class DataArguments:
-    sampled_queries: Union[str, list[str]] = field(default=None, metadata={"help": "Path to the sampled queries."})
+    sampled_queries: str = field(default=None, metadata={"help": "Path to the sampled queries."})
     split_path: str = field(default=None, metadata={"help": "Path to the split queries."})
     prompt_type: str = field(default="q_r", metadata = {"help": "chose which type to use"})
     debug_data: bool  = field(default=False, metadata = {"help": "chose which type to use"})
@@ -161,23 +160,16 @@ class SupervisedDataset(Dataset):
 
         with open(split_path) as f:
             train_splits = json.load(f)["train"]
+
+        with open(sampled_queries) as f:
+            sampled_queries = json.load(f)
+
+        
+        list_data_dict = []
         if data_args.debug_data:
             train_splits = train_splits[:1]
-
-        list_data_dict = []
-        if isinstance(sampled_queries,list):
-            for _sampled_queries in sampled_queries:
-                with open(_sampled_queries) as f:
-                    _sampled_queries = json.load(f)
-                for q in train_splits:
-                    list_data_dict.extend(_sampled_queries[q])
-                
-        elif isinstance(sampled_queries,str):
-            with open(sampled_queries) as f:
-                sampled_queries = json.load(f) 
-            
-            for q in train_splits:
-                list_data_dict.extend(sampled_queries[q])
+        for q in train_splits:
+            list_data_dict.extend(sampled_queries[q])
         
         logging.warning("Formatting inputs...")
         prompt_template = PROMPT_DICT[prompt_type]
