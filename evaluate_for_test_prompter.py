@@ -280,6 +280,5 @@ def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,
 
 
 if __name__ == "__main__":
-    try:
-        main()
+    main()
 
