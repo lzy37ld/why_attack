@@ -143,12 +143,13 @@ def create_targetlm(config):
                 device_map
             ): 
                 super().__init__()
+                self.config = config
                 model_name = config.model_name
-                self.template = config.template
+                self.original_template = config.template
                 if config.system_message:
-                    self.template = self.template.format(system_message = config.system_message, input = "{input}", prompt = "{prompt}")
+                    self.template = self.original_template.format(system_message = config.system_message, input = "{input}", prompt = "{prompt}")
                 else:
-                    self.template = self.template.format(input = "{input}", prompt = "{prompt}")
+                    self.template = self.original_template.format(input = "{input}", prompt = "{prompt}")
                 self.ppl_template = config.ppl_template
                 self.batch_size = config.batch_size
                 kwargs = check_torch_dtype(config)
@@ -161,6 +162,12 @@ def create_targetlm(config):
                 self.model = model
                 self.tokenizer= tokenizer
                 self.gen_kwargs = {"pad_token_id":self.tokenizer.pad_token_id, "eos_token_id":self.tokenizer.eos_token_id, "bos_token_id":self.tokenizer.bos_token_id}
+            
+            def replace_sys_msg(self,sys_mes):
+                if self.config.system_message:
+                    self.template = self.original_template.format(system_message = sys_mes, input = "{input}", prompt = "{prompt}")
+                else:
+                    self.template = self.original_template.format(input = "{input}", prompt = "{prompt}")
                 
             def create_gen_config(self,gen_config):
                 self.gen_config = GenerationConfig(**gen_config, **self.gen_kwargs)
