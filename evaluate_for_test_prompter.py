@@ -15,6 +15,7 @@ import json
 import time
 from torch.utils.data import Dataset
 from itertools import chain, repeat
+import random
 set_seed(42)
 
 
@@ -32,6 +33,24 @@ PROMPT_DICT = {
        "### Query:{q} ### Prompt:"
     ),
 }
+
+
+
+def unique_random_concat_combinations(lst, concat_times, sample_times):
+    # 生成所有可能的唯一组合
+    unique_combinations = [tuple(lst[i] for i in indices) for indices in itertools.combinations(range(len(lst)), concat_times)]
+
+    # 如果请求的组合数超过了总组合数，返回 None
+    if sample_times > len(unique_combinations):
+        raise NotImplementedError("False value for concat times and sample times")
+
+    # 随机选择 sample_times 个不同的组合
+    selected_combinations = random.sample(unique_combinations, sample_times)
+
+    # 连接选中的组合
+    concatenated_combinations = [' '.join(combination) for combination in selected_combinations]
+    return concatenated_combinations
+import itertools
 
 def select_max_reward_indexes(lst, interval=1):
     selected_indexes = []
@@ -125,13 +144,14 @@ def do_reps(
 @hydra.main(config_path="./myconfig", config_name="config_prompter_evaluate")
 def main(config: "DictConfig"):
 
-
+    print(config.reward_lm.model_name)
+    
     start_time = time.time()
     Path(config.s_p_t_dir).mkdir(exist_ok= True, parents= True)
 
-    config.reward_lm.batch_size = config.batch_size
-    config.target_lm.batch_size = config.batch_size
-    config.prompter_lm.batch_size = config.batch_size
+    # config.reward_lm.batch_size = config.batch_size
+    # config.target_lm.batch_size = config.batch_size
+    # config.prompter_lm.batch_size = config.batch_size
 
     s_p_t_dir = config.s_p_t_dir
     if config.prompt_way == "prompter":
@@ -139,9 +159,12 @@ def main(config: "DictConfig"):
         decode_way = f"decode_{config.prompter_lm.generation_configs.name}"
         if config.prompter_lm.generation_configs.num_return_sequences > 1:
             decode_way += f"_numreturn_{config.prompter_lm.generation_configs.num_return_sequences}"
+            if config.prompt_concat > 1:
+                decode_way += f"_p_concat_{config.prompt_concat}_group_{config.num_prompt_group}"
         if config.prompter_lm.generation_configs.repetition_penalty > 1:
             decode_way += f"_rep_{config.prompter_lm.generation_configs.repetition_penalty}"
         s_p_t_dir = os.path.join(s_p_t_dir,f"{config.data_args.split}|prompter_{config.prompter_lm.show_name}|{decode_way}|promptway_{promptway_name}")
+
         if config.q_rep!=1:
             s_p_t_dir += "|" + f"q_rep_{config.q_rep}"
         if config.q_prefix.choice in ["long","short","medium"]:
@@ -151,13 +174,22 @@ def main(config: "DictConfig"):
                 s_p_t_dir += "|" + f"q_s_position_{config.q_s_position}"
         else:
             raise ValueError("The q_s_position is not defined")
+        
+        if config.sys_msg.choice is not None:
+            if config.sys_msg.choice in ["no_persuasive"]:
+                s_p_t_dir += "|" + f"sys_msg_{config.sys_msg.choice}"
+            else:
+                raise ValueError(f"The {config.sys_msg.choice} is not defined")
+
     if not config.target_lm.model_name.startswith("gpt-"):
         s_p_t_dir = os.path.join(s_p_t_dir,f"{config.target_lm.show_name}|max_new_tokens_{config.target_lm.generation_configs.max_new_tokens}")
     else:
-        s_p_t_dir = os.path.join(s_p_t_dir,f"{config.target_lm.show_name}")
+        if config.target_lm.temperature == 1.0 and config.target_lm.top_p == 1.0:
+            s_p_t_dir = os.path.join(s_p_t_dir,f"{config.target_lm.show_name}")
+        else:
+            s_p_t_dir = os.path.join(s_p_t_dir,f"{config.target_lm.show_name}|temp={config.target_lm.temperature}_topp={config.target_lm.top_p}")
     Path(s_p_t_dir).mkdir(exist_ok= True, parents= True)
 
-    # save_path = os.path.join(s_p_t_dir,f"targetlm_do_sample_{config.target_lm.generation_configs.do_sample}|append_label_length_{config.append_label_length}.jsonl")
     save_path = os.path.join(s_p_t_dir,f"targetlm.jsonl")
     exist_lens = 0
     if os.path.exists(save_path):
@@ -166,7 +198,7 @@ def main(config: "DictConfig"):
         #     print("file exists, so skip")
         #     return
             
-    fp = jsonlines.open(save_path,"a")
+    fp = jsonlines.open(save_path,mode = "a",flush= True)
 
     processed_data = get_data(config.data_args)
     print(len(processed_data),'len(processed_data)')
@@ -180,20 +212,25 @@ def main(config: "DictConfig"):
     print(OmegaConf.to_yaml(config), color='red')
     
     target_model_tokenizer = None
-    if config.append_label_length != -1:
-        # only for selecting tokens at the front
-        target_model_tokenizer = set_pad_token(AutoTokenizer.from_pretrained(config.target_lm.model_name,padding_side = "right"))
-    reward_lm_fn = create_reward(config)
+    if config.reward_lm.model_name is not None:
+        reward_lm_fn = create_reward(config)
+    else:
+        reward_lm_fn = None
+
     if config.target_lm.model_name.startswith("gpt-"):
         from utility import OpenaiModel
-        target_lm_fn = OpenaiModel(model_name=config.target_lm.model_name,system_message = config.target_lm.system_message,template = config.target_lm.template)
+        target_lm_fn = OpenaiModel(model_name=config.target_lm.model_name,system_message = config.target_lm.system_message,template = config.target_lm.template, top_p = config.target_lm.top_p, temperature = config.target_lm.temperature)
     else:        
         target_lm_fn = create_targetlm(config)
+    if config.sys_msg.choice is not None:
+        target_lm_fn.replace_sys_msg(config.sys_msg[config.sys_msg.choice])
+
     prompter_lm_fn = None
     if config.prompt_way == "prompter":
         prompter_lm_fn = create_prompterlm(config)
 
     evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,processed_data,config,fp)
+    fp.close()
     end_time = time.time()
 
     # 计算运行时间
@@ -243,21 +280,39 @@ def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,
             print('prompt_lm_time for one query',round((prompt_lm_end_time - prompt_lm_start_time)/len(for_promptlm_q_s),2))
         else:
             raise NotImplementedError()
+        # torch.cuda.empty_cache()
 
         assert len(for_promptlm_q_s)*config.prompter_lm.generation_configs.num_return_sequences == len(p_s)
         print("prompter lm num_returns",config.prompter_lm.generation_configs.num_return_sequences)
-        repeat_for_targetlm_q_s = repeat_texts_l(for_targetlm_q_s,config.prompter_lm.generation_configs.num_return_sequences)
-        repeat_prompter_lm_inputs = repeat_texts_l(prompter_lm_inputs,config.prompter_lm.generation_configs.num_return_sequences)
+
+
+        if config.prompt_concat > 1:
+            _p_s = []
+            for k in range(0,len(p_s),config.prompter_lm.generation_configs.num_return_sequences):
+                tmp_l = unique_random_concat_combinations(p_s[k:k+config.prompter_lm.generation_configs.num_return_sequences],concat_times=config.prompt_concat,sample_times=config.num_prompt_group)
+                _p_s.extend(tmp_l)
+            p_s = _p_s
+            repeat_for_targetlm_q_s = repeat_texts_l(for_targetlm_q_s,config.num_prompt_group)
+            repeat_prompter_lm_inputs = repeat_texts_l(prompter_lm_inputs,config.num_prompt_group)
+        else:
+            repeat_for_targetlm_q_s = repeat_texts_l(for_targetlm_q_s,config.prompter_lm.generation_configs.num_return_sequences)
+            repeat_prompter_lm_inputs = repeat_texts_l(prompter_lm_inputs,config.prompter_lm.generation_configs.num_return_sequences)
         assert len(repeat_for_targetlm_q_s) == len(p_s)
         
 
         print("*"*50)
         print("This is target lm")
         target_lm_generations = target_lm_fn.get_target_lm_generation(repeat_for_targetlm_q_s,p_s)
+        # torch.cuda.empty_cache()
         print("*"*50)
         print("This is reward lm")
-        reward_scores = reward_lm_fn(repeat_for_targetlm_q_s,target_lm_generations)
-        reward_scores = reward_scores.cpu().tolist()
+        if reward_lm_fn is not None:
+            reward_scores = reward_lm_fn(repeat_for_targetlm_q_s,target_lm_generations)
+            reward_scores = reward_scores.cpu().tolist()
+            # torch.cuda.empty_cache()
+        else:
+            reward_scores = [None for _ in repeat_for_targetlm_q_s]
+        
         # gt_zero_reward_index = select_max_reward_indexes(reward_scores,interval=config.prompter_lm.generation_configs.num_return_sequences)
         # selected_rewards = [reward_scores[i] for i in gt_zero_reward_index]
         # selected_target_lm_generations = [target_lm_generations[i] for i in gt_zero_reward_index]
@@ -274,9 +329,8 @@ def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,
 
         for i in range(len(reward_scores)):
             fp.write(dict(q = repeat_for_targetlm_q_s[i],p = p_s[i],target_lm_generation = target_lm_generations[i],reward = reward_scores[i],ppl_q_p = ppl_q_p[i],prompter_lm_inputs = repeat_prompter_lm_inputs[i]))
-        
-        progress_keys.update(config.batch_size)
 
+        progress_keys.update(config.batch_size)
 
 
 if __name__ == "__main__":
