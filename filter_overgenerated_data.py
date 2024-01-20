@@ -15,7 +15,54 @@ import time
 import pathlib
 random.seed(42)
 from utility import deter_if_harm
+from omegaconf.listconfig import ListConfig
 
+
+
+def double_point_search_same_index(list1,list2):
+    i, j = 0, 0
+    len_list1, len_list2 = len(list1), len(list2)
+    matching_dicts_example = []
+    from_list1 = True
+    while i < len_list1 and j < len_list2:
+        if list1[i]['index'] == list2[j]['index']:
+            if from_list1:
+                matching_dicts_example.append(list1[i])
+                from_list1 = False
+            else:
+                matching_dicts_example.append(list2[j])
+                from_list1 = True
+            i += 1
+            j += 1
+        elif list1[i]['index'] < list2[j]['index']:
+            i += 1
+        else:
+            j += 1
+    return matching_dicts_example
+
+
+def multi_list_search(lists):
+    pointers = [0] * len(lists)  # 为每个列表创建一个指针
+    matching_dicts = []
+    list_to_choose = 0  # 用于跟踪下一个选择元素的列表
+
+    while all(p < len(lst) for p, lst in zip(pointers, lists)):
+        current_indexes = [lists[i][pointers[i]]['index'] for i in range(len(lists))]
+        min_index = min(current_indexes)
+
+        if all(index == min_index for index in current_indexes):
+            # 所有列表中的 'index' 相同，从指定的列表中选择一个元素
+            matching_dicts.append(lists[list_to_choose][pointers[list_to_choose]])
+            list_to_choose = (list_to_choose + 1) % len(lists)  # 更新下一个列表
+            pointers = [p + 1 for p in pointers]
+        else:
+            # 移动最小 'index' 的指针
+            for i, index in enumerate(current_indexes):
+                if index == min_index:
+                    pointers[i] += 1
+                    break
+
+    return matching_dicts
 
 
 def get_d_total_len(d):
@@ -50,9 +97,10 @@ def sample_iteratively_by_key(d, n_sample):
             break
     return l
 
-def process_data(line,determine_way):
+def process_data(line_w_index,determine_way):
+    index,line = line_w_index
     is_harm = deter_if_harm(harm_scores=[line["reward"]],target_lm_generations=[line["target_lm_generation"]],determine_way = determine_way)[0]
-    return (line["q"],line["p"],line["loss"],line["reward"],line["target_lm_generation"],line["target"],line["step"],is_harm) 
+    return index,(line["q"],line["p"],line["loss"],line["reward"],line["target_lm_generation"],line["target"],line["step"],is_harm) 
 
 def read_and_dedup(path,config):
     datas = []
@@ -85,15 +133,15 @@ def read_and_dedup(path,config):
             break
         except:
             continue
-
+    indexed_all_lines = enumerate(all_lines)
     with multiprocessing.Pool(10) as pool:
-        results = pool.imap_unordered(_process_data, all_lines,chunksize=10000)
-        for q,p,loss,reward,target_lm_generation,target,step,is_harm in results:
+        results = pool.imap(_process_data, indexed_all_lines,chunksize=1000)
+        for index,(q,p,loss,reward,target_lm_generation,target,step,is_harm) in results:
             if is_harm:
                 if (q,p) not in unique_lines:
                     unique_lines.add((q,p,target_lm_generation))  # 保留具有唯一值的行的索引
                     # 考虑把target也加进去。。。
-                    datas.append(dict(q = q,p = p, loss = loss, reward = reward, target_lm_generation = target_lm_generation, target = target,step = step))
+                    datas.append(dict(q = q,p = p, loss = loss, reward = reward, target_lm_generation = target_lm_generation, target = target,step = step,index = index))
 
     return datas, set([_["q"] for _ in all_lines])
 
@@ -195,19 +243,43 @@ def main(config: "DictConfig"):
     num_all_queries = 0
     all_checked_queries = []
     for offset in tqdm(train_offsets):
-        path = evaluated_data_path_template.format(offset = offset)
-        if os.path.exists(path):
-            with open(path) as f:
-                if len(f.readlines()) <=0:
-                    print(path,"do not have values")
-                    continue
-            unfilter_data,checked_queries = read_and_dedup(path,config)
-            num_all_queries += len(checked_queries)
-            queries_with_jb.extend(list(set([_["q"] for _ in unfilter_data])))
-            all_checked_queries.extend(list(checked_queries))
-
+        if not isinstance(evaluated_data_path_template,ListConfig):
+            path = evaluated_data_path_template.format(offset = offset)
+            if os.path.exists(path):
+                with open(path) as f:
+                    if len(f.readlines()) <=0:
+                        print(path,"do not have values")
+                        continue
+                unfilter_data,checked_queries = read_and_dedup(path,config)
+                num_all_queries += len(checked_queries)
+                queries_with_jb.extend(list(set([_["q"] for _ in unfilter_data])))
+                all_checked_queries.extend(list(checked_queries))
+                q_dict = get_q_dict(unfilter_data,config)
+                q_dict_list.append(q_dict)
+        else:
+            print("It is a list")
+            unfilter_data_l = []
+            for _evaluated_data_path_template in evaluated_data_path_template:
+                path = _evaluated_data_path_template.format(offset = offset)
+                if not os.path.exists(path):
+                    print("dont have this path.")      
+                    break
+                if os.path.exists(path):
+                    with open(path) as f:
+                        if len(f.readlines()) <=0:
+                            print(path,"do not have values")
+                            continue
+                    unfilter_data,checked_queries = read_and_dedup(path,config)
+                    # num_all_queries += len(checked_queries)
+                    # queries_with_jb.extend(list(set([_["q"] for _ in unfilter_data])))
+                    # all_checked_queries.extend(list(checked_queries))
+                unfilter_data_l.append(unfilter_data)
+            
+            unfilter_data = multi_list_search(unfilter_data_l)
+            print("len(unfilter_data)",len(unfilter_data))
             q_dict = get_q_dict(unfilter_data,config)
             q_dict_list.append(q_dict)
+
     
     combined_dict = {key: value for d in q_dict_list for key, value in d.items()}
     pathlib.Path(config.save_dir).mkdir(exist_ok= True, parents= True)
@@ -215,31 +287,31 @@ def main(config: "DictConfig"):
     with open(save_path,"w") as f:
         json.dump(combined_dict,f)
 
-    save_path = os.path.join(config.save_dir,f"allchecked_JB_victimmodel={config.evaluated_model}.json")
-    with open(save_path,"w") as f:
-        json.dump({"all_checked_queries": all_checked_queries},f)
+    # save_path = os.path.join(config.save_dir,f"allchecked_JB_victimmodel={config.evaluated_model}.json")
+    # with open(save_path,"w") as f:
+    #     json.dump({"all_checked_queries": all_checked_queries},f)
 
 
-    info_path = os.path.join(config.save_dir,"info.txt")
-    nl = "\n"
+    # info_path = os.path.join(config.save_dir,"info.txt")
+    # nl = "\n"
     
-    with open(info_path,"a") as f:
-        f.write(nl)
-        f.write("*"*50)
-        f.write("*"*50)
-        f.write("*"*50)
-        f.write(nl)
-        f.write(f"success_JB_victimmodel={config.evaluated_model}_sampleway={config.sample_way}_nsample={config.n_sample}.json")
-        f.write(nl)
-        current_timestamp = time.time()
-        local_time = time.localtime(current_timestamp)
-        f.write(f"time: {time.strftime('%Y-%m-%d %H:%M:%S', local_time)}")
-        f.write(nl)
-        f.write(nl)
-        f.write(f"total #jb queries: {len(queries_with_jb)}")
-        f.write(nl)
-        f.write(f"total raio jb queries: {len(queries_with_jb)/num_all_queries}")
-        f.write(nl)
+    # with open(info_path,"a") as f:
+    #     f.write(nl)
+    #     f.write("*"*50)
+    #     f.write("*"*50)
+    #     f.write("*"*50)
+    #     f.write(nl)
+    #     f.write(f"success_JB_victimmodel={config.evaluated_model}_sampleway={config.sample_way}_nsample={config.n_sample}.json")
+    #     f.write(nl)
+    #     current_timestamp = time.time()
+    #     local_time = time.localtime(current_timestamp)
+    #     f.write(f"time: {time.strftime('%Y-%m-%d %H:%M:%S', local_time)}")
+    #     f.write(nl)
+    #     f.write(nl)
+    #     f.write(f"total #jb queries: {len(queries_with_jb)}")
+    #     f.write(nl)
+    #     f.write(f"total raio jb queries: {len(queries_with_jb)/num_all_queries}")
+    #     f.write(nl)
 
     
 
