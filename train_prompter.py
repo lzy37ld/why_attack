@@ -70,7 +70,9 @@ class ModelArguments:
 class DataArguments:
     sampled_queries: str = field(default=None, metadata={"help": "Path to the sampled queries."})
     split_path: str = field(default=None, metadata={"help": "Path to the split queries."})
-    prompt_type: str = field(default="q_r", metadata = {"help": "chose which type to use"})
+    prompt_type: str = field(default="q_r", metadata = {"help": "choose which type to use"})
+    num_queries: int = field(default=-1, metadata = {"help": "How many queries for training? -1 means for all available train queries"})
+    use_split_in_data: bool = field(default=False,metadata={"help": "If ignore the split_path and use all data in the sample_queries"})
     debug_data: bool  = field(default=False, metadata = {"help": "chose which type to use"})
 
 
@@ -158,16 +160,26 @@ class SupervisedDataset(Dataset):
         sampled_queries = data_args.sampled_queries
         prompt_type = data_args.prompt_type
 
-        with open(split_path) as f:
-            train_splits = json.load(f)["train"]
-
         with open(sampled_queries) as f:
             sampled_queries = json.load(f)
 
-        
-        list_data_dict = []
+        if not data_args.use_split_in_data:
+            with open(split_path) as f:
+                train_splits = json.load(f)["train"]
+            if data_args.num_queries > 0:
+                train_splits = train_splits[:data_args.num_queries]
+
+        if data_args.use_split_in_data:
+            print("Note: We ignore the splits and use all the available queries in the sample_queries")
+            train_splits = list(sampled_queries.keys())
+
         if data_args.debug_data:
             train_splits = train_splits[:1]
+
+
+
+        print(f"Use {len(train_splits)} for training in total")
+        list_data_dict = []
         for q in train_splits:
             list_data_dict.extend(sampled_queries[q])
         
@@ -274,9 +286,6 @@ def train():
             if ppl_loss:
                 loss_metric.update({"ppl_loss":ppl_loss.item()})
                 self.log(loss_metric)
-
-            
-
 
             return (loss, outputs) if return_outputs else loss
 
