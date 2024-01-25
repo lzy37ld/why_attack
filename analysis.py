@@ -25,7 +25,8 @@ def find_min_corresponding_b(a, b):
 def main(args):
 	Path(args.save_dir).mkdir(exist_ok= True, parents= True)
 	save_path = os.path.join(args.save_dir,f"{args.determine_way}|{args.path.split('/')[-1]}")
-	if os.path.exists(save_path):
+	
+	if os.path.exists(save_path) and not args.print_only:
 		return 1
 
 	q_s_harm = ddict( lambda: ddict(list))

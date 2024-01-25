@@ -187,10 +187,7 @@ def main(config: "DictConfig"):
     if not config.target_lm.model_name.startswith("gpt-"):
         s_p_t_dir = os.path.join(s_p_t_dir,f"{config.target_lm.show_name}|max_new_tokens_{config.target_lm.generation_configs.max_new_tokens}")
     else:
-        if config.target_lm.temperature == 1.0 and config.target_lm.top_p == 1.0:
-            s_p_t_dir = os.path.join(s_p_t_dir,f"{config.target_lm.show_name}")
-        else:
-            s_p_t_dir = os.path.join(s_p_t_dir,f"{config.target_lm.show_name}|temp={config.target_lm.temperature}_topp={config.target_lm.top_p}")
+        s_p_t_dir = os.path.join(s_p_t_dir,f"{config.target_lm.show_name}|temp={config.target_lm.temperature}_topp={config.target_lm.top_p}")
     Path(s_p_t_dir).mkdir(exist_ok= True, parents= True)
 
     save_path = os.path.join(s_p_t_dir,f"targetlm.jsonl")

@@ -22,7 +22,6 @@ offset: null
 batch_size: 16
 append_label_length: -1
 s_p_t_dir: ./s_p_t_evaluate
-rank_dir: ./rank_evaluate
 prompt_way: own
 adv_prompt_per_step_per_instances: 256
 adv_prompt_steps_per_instances: null

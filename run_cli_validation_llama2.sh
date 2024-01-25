@@ -17,7 +17,7 @@ set -e
 # llama2-chat-7b
 split="val"
 ppl=true
-checkpoints=(25000)
+checkpoints=(30000)
 victim_model="llama2-7b-chat"
 sample_way_and_n_sample_s=('loss_100_nsample=200_epoch_5')
 for checkpoint in "${checkpoints[@]}"
@@ -99,7 +99,7 @@ done
 # llama2-chat-7b
 split="train"
 ppl=false
-checkpoints=(25000)
+checkpoints=(30000)
 victim_model="llama2-7b-chat"
 sample_way_and_n_sample_s=('loss_100_nsample=200_epoch_5')
 for checkpoint in "${checkpoints[@]}"

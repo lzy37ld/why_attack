@@ -89,7 +89,7 @@ set -e
 # done
 
 
-split="gpt_heldout_test"
+split="gpt_test"
 ppl=false
 checkpoints=(final)
 victim_model="vicuna-7b-chat-v1.5_and_vicuna-13b-chat-v1.5_and_guanaco-7b-chat_and_guanaco-13b-chat"

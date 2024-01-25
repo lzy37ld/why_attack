@@ -106,14 +106,14 @@ import backoff
 openai.api_key = os.getenv("OPENAI_API_KEY")
     
 class OpenaiModel():
-    def __init__(self, model_name="gpt-3.5-turbo", add_system_prompt=True, system_message = "You are a helpful assistant.",template = "{input}") -> None:
+    def __init__(self, model_name="gpt-3.5-turbo", add_system_prompt=True, system_message = "You are a helpful assistant.",template = "{input}",top_p=0,temperature=0) -> None:
         self.model_name = model_name
         self.add_system_prompt = add_system_prompt
         self.system_message = system_message
         self.template = template
         self.client = openai.OpenAI()
-        self.top_p=0.0
-        self.temperature=0
+        self.top_p=top_p
+        self.temperature=temperature
     
     def fit_message(self, msg):
         if self.add_system_prompt:

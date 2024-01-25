@@ -10,4 +10,4 @@
 
 export name=$1
 # sbatch slurm/run.slurm
-srun --jobid $SLURM_JOBID bash -c 'bash ${name}.sh'
+srun --jobid $SLURM_JOBID --unbuffered bash -c 'bash ${name}.sh'
