@@ -73,14 +73,14 @@ def create_reward(config):
                     batch_inputs = q_and_p_s[i: i +batch_size]
                     batch_outputs = ans_s[i: i +batch_size]
                     batch = [self.template.format(model_input = batch_inputs[index], model_output = batch_outputs[index]) for index in range(len(batch_inputs))]
-                    try:
-                        outputs_l.append(self._reward_run_batch(batch,device))
-                    except:
-                        print("run one by one for _reward_run")
-                        single_outputs_l = []
-                        for single_batch in batch:
-                            single_outputs_l.append(self._reward_run_batch(single_batch,device))
-                        outputs_l.extend(single_outputs_l)        
+                    
+                    outputs_l.append(self._reward_run_batch(batch,device))
+                    # except:
+                    #     print("run one by one for _reward_run")
+                    #     single_outputs_l = []
+                    #     for single_batch in batch:
+                    #         single_outputs_l.append(self._reward_run_batch(single_batch,device))
+                    #     outputs_l.extend(single_outputs_l)        
                 return torch.cat(outputs_l,dim = 0).view(-1),outputs_l
             
             def _reward_run_debug(self, q_and_p_s, ans_s, device):
@@ -210,14 +210,14 @@ def create_targetlm(config):
                         print(batch[0])
                         print(self.tokenizer.decode(self.tokenizer.encode(batch[0])))
                         print("Add special tokens should be True")
-                    try: 
-                        outputs_l.extend(self._targetlm_run_batch(batch,device))
-                    except:
-                        print("run one by one for _targetlm_run")
-                        single_outputs_l = []
-                        for single_batch in batch:
-                            single_outputs_l.extend(self._targetlm_run_batch(single_batch,device))
-                        outputs_l.extend(single_outputs_l)        
+
+                    outputs_l.extend(self._targetlm_run_batch(batch,device))
+                    # except:
+                    #     print("run one by one for _targetlm_run")
+                    #     single_outputs_l = []
+                    #     for single_batch in batch:
+                    #         single_outputs_l.extend(self._targetlm_run_batch(single_batch,device))
+                    #     outputs_l.extend(single_outputs_l)        
                 return outputs_l
             
             def targetlm_run(self, q_s, p_s, device):
@@ -256,14 +256,14 @@ def create_targetlm(config):
                         print(batch[0])
                         print(self.tokenizer.decode(self.tokenizer.encode(batch[0])))
                         print("Add special tokens should be True")
-                    try:
-                        outputs_l.extend(self._ppl_run_batch(batch,device))
-                    except:
-                        print("run one by one for _ppl_run")
-                        single_outputs_l = []
-                        for single_batch in batch:
-                            single_outputs_l.extend(self._ppl_run_batch(single_batch,device))
-                        outputs_l.extend(single_outputs_l)        
+                    
+                    outputs_l.extend(self._ppl_run_batch(batch,device))
+                    # except:
+                    #     print("run one by one for _ppl_run")
+                    #     single_outputs_l = []
+                    #     for single_batch in batch:
+                    #         single_outputs_l.extend(self._ppl_run_batch(single_batch,device))
+                    #     outputs_l.extend(single_outputs_l)        
                 return outputs_l
 
         device_map = {"device_map":"auto"}
@@ -329,14 +329,14 @@ def create_prompterlm(config):
                         print(batch[0])
                         print(self.tokenizer.decode(self.tokenizer.encode(batch[0])))
                         print("Add special tokens should be True")
-                    try:
-                        outputs_l.extend(self._prompterlm_run_batch(batch,device))
-                    except:
-                        print("run one by one for _prompterlm_run")
-                        single_outputs_l = []
-                        for single_batch in batch:
-                            single_outputs_l.extend(self._prompterlm_run_batch(single_batch,device))
-                        outputs_l.extend(single_outputs_l)        
+                    
+                    outputs_l.extend(self._prompterlm_run_batch(batch,device))
+                    # except:
+                    #     print("run one by one for _prompterlm_run")
+                    #     single_outputs_l = []
+                    #     for single_batch in batch:
+                    #         single_outputs_l.extend(self._prompterlm_run_batch(single_batch,device))
+                    #     outputs_l.extend(single_outputs_l)        
                 return outputs_l
             
             def prompterlm_run(self, q_s, device):
