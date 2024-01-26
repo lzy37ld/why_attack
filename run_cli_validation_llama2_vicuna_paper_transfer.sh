@@ -17,7 +17,7 @@ set -e
 
 split="test"
 ppl=false
-checkpoints=(50000 final)
+checkpoints=(final)
 victim_model="llama2-7b-chat_and_vicuna-7b-chat-v1.5"
 sample_way_and_n_sample_s=('loss_100_nsample=200_epoch_3')
 for checkpoint in "${checkpoints[@]}"
