@@ -10,12 +10,25 @@ model_name=llama2-base
 split_path=""
 sampled_queries=""
 
-victim_model="vicuna-7b-chat-v1.5"
+# victim_model="vicuna-7b-chat-v1.5"
+victim_model="llama2-7b-chat_and_vicuna-7b-chat-v1.5_and_vicuna-13b-chat-v1.5_and_guanaco-7b-chat_and_guanaco-13b-chat"
 # step | loss_100 | random
-sample_way_and_n_sample="step_nsample=200"
+sample_way_and_n_sample="loss_100_nsample=200"
+
 split_path="data/train_val_test.json"
 # step | loss_100 | random
-sampled_queries="data/success_JB_victimmodel=${victim_model}_sampleway=${sample_way_and_n_sample}.json"
+sampled_queries="success_JB_victimmodel=${victim_model}_sampleway=${sample_way_and_n_sample}.json"
+
+# default medium_folder=''
+medium_folder=five_llama2_vicuna_guanaco
+
+
+if [[ -n $medium_folder ]]; then
+    sampled_queries="data/${medium_folder}/${sampled_queries}"
+else
+    sampled_queries="data/${sampled_queries}"
+fi
+
 
 # default num_queries=-1
 num_queries=-1
@@ -24,10 +37,12 @@ num_queries=-1
 debug_data=false
 
 # default num_train_epochs=5
-num_train_epochs=5
+num_train_epochs=3
+
 
 # default use_split_in_data=false
-use_split_in_data=false
+# only need to be false for single vicuna..
+use_split_in_data=true
 
 
 # default ppl_ratio=0.1
