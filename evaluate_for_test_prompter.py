@@ -179,6 +179,9 @@ def main(config: "DictConfig"):
         
         if config.w_affirm_suffix:
             s_p_t_dir += "|" + f"w_affirm_suffix"
+
+        if config.prompter_w_system:
+            s_p_t_dir += "|" + f"prompter_w_system"
         
         if config.sys_msg.choice is not None:
             if config.sys_msg.choice in ["no_persuasive"]:
@@ -286,6 +289,12 @@ def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,
             for_targetlm_q_s = processed_q_s
         else:
             raise ValueError("The q_s_position is not defined")
+        
+        if config.prompter_w_system:
+            for_promptlm_q_s = [target_lm_fn.system_message +  _ for _ in for_promptlm_q_s]
+            print("for_promptlm_q_s[0]:",for_promptlm_q_s[0])
+        
+        
 
         
         if config.prompt_way == "prompter":
