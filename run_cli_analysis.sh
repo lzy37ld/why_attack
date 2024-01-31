@@ -4,12 +4,13 @@ set -e
 
 
 
-split="val"
+split="test"
 checkpoints=(5000 10000 15000 20000 25000 30000 35000 40000)
-# checkpoints=(15000)
+checkpoints=(15000)
 sample_ways=(loss_100 random step)
-# sample_ways=(loss_100)
-victim_model=llama2-7b-chat
+sample_ways=(loss_100)
+victim_model=vicuna-7b-chat-v1.5
+# victim_model=vicuna-7b-chat-v1.5
 
 for checkpoint in "${checkpoints[@]}"
 do
