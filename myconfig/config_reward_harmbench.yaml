@@ -1,0 +1,23 @@
+hydra:
+  output_subdir: null
+  run:
+    # current dir when you read this file..
+    dir: ./
+
+
+defaults:
+  # # reward_lm: ???
+  - reward_lm: harmbench-13b
+
+
+# path: null
+path: ???
+batch_size: 4
+
+
+# if only reward the instances that are classified as harmful before
+only_prev_harm: true
+
+
+
+
