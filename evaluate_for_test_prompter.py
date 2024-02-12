@@ -19,6 +19,13 @@ import random
 set_seed(42)
 
 
+fail_reward = {
+    "reward": -100,
+    "harmbench_reward": "No"
+}
+
+
+
 PROMPT_DICT = {
     # "q_p_r": (
     #     "### Query:{query}### Prompt:{prompt}### Response:{response}"
@@ -33,8 +40,6 @@ PROMPT_DICT = {
        "### Query:{q} ### Prompt:"
     ),
 }
-
-
 
 def unique_random_concat_combinations(lst, concat_times, sample_times):
     # 生成所有可能的唯一组合
@@ -108,7 +113,6 @@ def get_data(data_args):
     print("****************")
     return list_qs
 
-
 def attack_collate_fn(batch):
     collated_batch = {}
     for item in batch:
@@ -124,7 +128,6 @@ def set_pad_token(t):
         t.pad_token = t.eos_token
     
     return t
-
 
 def get_batch(l,bs):
     for i in range(0,len(l),bs):
@@ -201,7 +204,9 @@ def main(config: "DictConfig"):
                 s_p_t_dir += "|" + f"sys_msg_{config.sys_msg.choice}"
             else:
                 raise ValueError(f"The {config.sys_msg.choice} is not defined")
-    
+            
+    if "beaver" not in config.reward_lm.model_name.lower():
+        s_p_t_dir += "|" + f"rm_{config.reward_lm.show_name}"
 
     if not config.target_lm.model_name.startswith("gpt-"):
         s_p_t_dir = os.path.join(s_p_t_dir,f"{config.target_lm.show_name}|max_new_tokens_{config.target_lm.generation_configs.max_new_tokens}")
@@ -291,7 +296,7 @@ def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,
             raise ValueError("The q_s_position is not defined")
         
         if config.prompter_w_system:
-            for_promptlm_q_s = [target_lm_fn.system_message +  _ for _ in for_promptlm_q_s]
+            for_promptlm_q_s = [target_lm_fn.system_message + " " + _ for _ in for_promptlm_q_s]
             print("for_promptlm_q_s[0]:",for_promptlm_q_s[0])
         
         
@@ -330,6 +335,7 @@ def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,
         elif config.prompt_way == "own":
             prompter_lm_inputs = [None] * len(for_promptlm_q_s)
             p_s = [config.own_prompt] * len(for_promptlm_q_s)
+            print('config.prompt_way == "own"')
             print(p_s[0])
             repeat_prompter_lm_inputs = prompter_lm_inputs
             repeat_for_targetlm_q_s = for_targetlm_q_s
@@ -350,7 +356,7 @@ def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,
         print("This is reward lm")
         if reward_lm_fn is not None:
             reward_scores = reward_lm_fn(repeat_for_targetlm_q_s,target_lm_generations)
-            reward_scores = reward_scores.cpu().tolist()
+            # reward_scores = reward_scores.cpu().tolist()
             # torch.cuda.empty_cache()
         else:
             reward_scores = [None for _ in repeat_for_targetlm_q_s]
@@ -361,8 +367,17 @@ def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,
             print("This is ppl run")
             ppl_q_p = target_lm_fn.ppl_run(repeat_for_targetlm_q_s,p_s)
 
+        if "beaver" in config.reward_lm.model_name.lower():
+            reward_name = "reward"
+        elif "harmbench" in config.reward_lm.model_name.lower():
+            reward_name = "harmbench_reward"
+        else:
+            raise NotImplementedError()
+
         for i in range(len(reward_scores)):
-            fp.write(dict(q = repeat_for_targetlm_q_s[i],p = p_s[i],target_lm_generation = target_lm_generations[i],reward = reward_scores[i],ppl_q_p = ppl_q_p[i],prompter_lm_inputs = repeat_prompter_lm_inputs[i]))
+            save_d = dict(q = repeat_for_targetlm_q_s[i],p = p_s[i],target_lm_generation = target_lm_generations[i],ppl_q_p = ppl_q_p[i],prompter_lm_inputs = repeat_prompter_lm_inputs[i])
+            save_d.update({reward_name:reward_scores[i]})
+            fp.write(save_d)
 
         progress_keys.update(config.batch_size)
 

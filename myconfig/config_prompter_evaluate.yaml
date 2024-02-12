@@ -5,7 +5,7 @@ hydra:
     dir: ./
 
 defaults:
-  - reward_lm: reward_lm
+  - reward_lm: beaver-7b
   - target_lm: vicuna-chat
   - prompter_lm: prompter_lm
   - generation_configs@prompter_lm: greedy
@@ -50,6 +50,7 @@ sys_msg:
   choice: null
   
 w_affirm_suffix: false
+prompter_w_system: false
 affirm_suffix: Sure here is
 
 force_append: false

@@ -129,7 +129,8 @@ class OpenaiModel():
 
     @backoff.on_exception(backoff.expo, openai.RateLimitError)
     def __call__(self, msg, **kwargs):
-
+        print('self.fit_message(msg)')
+        print(self.fit_message(msg))
         raw_response = self.client.chat.completions.create(
                     model=self.model_name,
                     messages=self.fit_message(msg),
@@ -147,6 +148,9 @@ class OpenaiModel():
             print(msg)
             outputs.append(self(msg,top_p=self.top_p,temperature=self.temperature))
         return outputs
+    
+    def replace_sys_msg(self,sys_mes):
+        self.system_message = sys_mes
 
 
 

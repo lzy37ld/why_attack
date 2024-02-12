@@ -39,12 +39,43 @@ set -e
 # 	done
 # done
 
-# transfer
+
+
+# # transfer
+# split="test"
+# ppl=false
+# checkpoints=(30000)
+# victim_model="llama2-7b-chat"
+# sample_way_and_n_sample_s=('loss_100_nsample=200_epoch_5')
+# for checkpoint in "${checkpoints[@]}"
+# do
+# 	for sample_way_and_n_sample in "${sample_way_and_n_sample_s[@]}"
+# 	do
+# 		model_name="'/fs/ess/PAA0201/lzy37ld/why_attack/ckpt/prompter_victim=${victim_model}_prompt_type=q_p_model_name=llama2-base_sample_way_and_n_sample=${sample_way_and_n_sample}/checkpoint-${checkpoint}'"
+# 		show_name="${split}_checkpoint"
+# 		s_p_t_dir="'/fs/ess/PAA0201/lzy37ld/why_attack/ckpt/prompter_victim=${victim_model}_prompt_type=q_p_model_name=llama2-base_sample_way_and_n_sample=${sample_way_and_n_sample}/checkpoint-${checkpoint}-${split}-transfer'"
+# 		if [ "$checkpoint" == "final" ]; then
+# 			model_name="'/fs/ess/PAA0201/lzy37ld/why_attack/ckpt/prompter_victim=${victim_model}_prompt_type=q_p_model_name=llama2-base_sample_way_and_n_sample=${sample_way_and_n_sample}'"
+# 			s_p_t_dir="'/fs/ess/PAA0201/lzy37ld/why_attack/ckpt/prompter_victim=${victim_model}_prompt_type=q_p_model_name=llama2-base_sample_way_and_n_sample=${sample_way_and_n_sample}/checkpoint-40000-${split}-transfer'"
+# 		fi
+# 		# need to change the setting in config
+# 		python evaluate_for_test_prompter.py target_lm=vicuna-chat force_append=true prompt_way=own data_args.split=${split} ppl=${ppl} s_p_t_dir=$s_p_t_dir target_lm.generation_configs.max_new_tokens=100 prompt_own_list=config_GCG_suffix prompt_own_list_name=llama2_low
+# 		python evaluate_for_test_prompter.py target_lm=vicuna-chat force_append=true prompt_way=own data_args.split=${split} ppl=${ppl} s_p_t_dir=$s_p_t_dir target_lm.generation_configs.max_new_tokens=100 prompt_own_list=config_GCG_suffix prompt_own_list_name=llama2_all
+# 		python evaluate_for_test_prompter.py target_lm=mistral-instruct force_append=true prompt_way=own data_args.split=${split} ppl=${ppl} s_p_t_dir=$s_p_t_dir target_lm.generation_configs.max_new_tokens=100 prompt_own_list=config_GCG_suffix prompt_own_list_name=llama2_low
+# 		python evaluate_for_test_prompter.py target_lm=mistral-instruct force_append=true prompt_way=own data_args.split=${split} ppl=${ppl} s_p_t_dir=$s_p_t_dir target_lm.generation_configs.max_new_tokens=100 prompt_own_list=config_GCG_suffix prompt_own_list_name=llama2_all
+# 	done
+# done
+
+
+
+
+# # transfer
+# transfer llama2 and vicuna
 split="test"
 ppl=false
-checkpoints=(30000)
-victim_model="llama2-7b-chat"
-sample_way_and_n_sample_s=('loss_100_nsample=200_epoch_5')
+checkpoints=(final)
+victim_model="llama2-7b-chat_and_vicuna-7b-chat-v1.5"
+sample_way_and_n_sample_s=('loss_100_nsample=200_epoch_3')
 for checkpoint in "${checkpoints[@]}"
 do
 	for sample_way_and_n_sample in "${sample_way_and_n_sample_s[@]}"
@@ -54,12 +85,11 @@ do
 		s_p_t_dir="'/fs/ess/PAA0201/lzy37ld/why_attack/ckpt/prompter_victim=${victim_model}_prompt_type=q_p_model_name=llama2-base_sample_way_and_n_sample=${sample_way_and_n_sample}/checkpoint-${checkpoint}-${split}-transfer'"
 		if [ "$checkpoint" == "final" ]; then
 			model_name="'/fs/ess/PAA0201/lzy37ld/why_attack/ckpt/prompter_victim=${victim_model}_prompt_type=q_p_model_name=llama2-base_sample_way_and_n_sample=${sample_way_and_n_sample}'"
-			s_p_t_dir="'/fs/ess/PAA0201/lzy37ld/why_attack/ckpt/prompter_victim=${victim_model}_prompt_type=q_p_model_name=llama2-base_sample_way_and_n_sample=${sample_way_and_n_sample}/checkpoint-40000-${split}-transfer'"
+			s_p_t_dir="'/fs/ess/PAA0201/lzy37ld/why_attack/ckpt/prompter_victim=${victim_model}_prompt_type=q_p_model_name=llama2-base_sample_way_and_n_sample=${sample_way_and_n_sample}/checkpoint-final-${split}-transfer'"
 		fi
 		# need to change the setting in config
-		python evaluate_for_test_prompter.py target_lm=vicuna-chat force_append=true prompt_way=own data_args.split=${split} ppl=${ppl} s_p_t_dir=$s_p_t_dir target_lm.generation_configs.max_new_tokens=100 prompt_own_list=config_GCG_suffix prompt_own_list_name=llama2_low
-		python evaluate_for_test_prompter.py target_lm=vicuna-chat force_append=true prompt_way=own data_args.split=${split} ppl=${ppl} s_p_t_dir=$s_p_t_dir target_lm.generation_configs.max_new_tokens=100 prompt_own_list=config_GCG_suffix prompt_own_list_name=llama2_all
-		python evaluate_for_test_prompter.py target_lm=mistral-instruct force_append=true prompt_way=own data_args.split=${split} ppl=${ppl} s_p_t_dir=$s_p_t_dir target_lm.generation_configs.max_new_tokens=100 prompt_own_list=config_GCG_suffix prompt_own_list_name=llama2_low
-		python evaluate_for_test_prompter.py target_lm=mistral-instruct force_append=true prompt_way=own data_args.split=${split} ppl=${ppl} s_p_t_dir=$s_p_t_dir target_lm.generation_configs.max_new_tokens=100 prompt_own_list=config_GCG_suffix prompt_own_list_name=llama2_all
+		python evaluate_for_test_prompter.py target_lm=llama2-chat force_append=true prompt_way=own data_args.split=${split} ppl=${ppl} s_p_t_dir=$s_p_t_dir target_lm.generation_configs.max_new_tokens=100 prompt_own_list=config_GCG_suffix prompt_own_list_name=llama2_vicuna_all
+		python evaluate_for_test_prompter.py target_lm=vicuna-chat force_append=true prompt_way=own data_args.split=${split} ppl=${ppl} s_p_t_dir=$s_p_t_dir target_lm.generation_configs.max_new_tokens=100 prompt_own_list=config_GCG_suffix prompt_own_list_name=llama2_vicuna_all
+		python evaluate_for_test_prompter.py target_lm=mistral-instruct force_append=true prompt_way=own data_args.split=${split} ppl=${ppl} s_p_t_dir=$s_p_t_dir target_lm.generation_configs.max_new_tokens=100 prompt_own_list=config_GCG_suffix prompt_own_list_name=llama2_vicuna_all
 	done
 done

@@ -8,6 +8,7 @@ from collections import defaultdict as ddict
 import numpy as np
 import torch
 import copy
+import json
 from torch.nn import CrossEntropyLoss
 loss_fct = CrossEntropyLoss(reduction="none")
 
@@ -47,70 +48,62 @@ def create_reward(config):
                 self.batch_size = config.batch_size
                 self.config = config
                 kwargs = check_torch_dtype(config)
-                if config.debug:
+
+                if "beaver" in model_name.lower():
+                    model = AutoModelForScore.from_pretrained(model_name, **kwargs,**device_map)
+                    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False)
+                    tokenizer.padding_side = "right"
+                elif "harmbench" in model_name.lower():
+                    template_path = self.template.replace("path:","")
+                    with open(template_path) as f:
+                        self.template = json.load(f)["LLAMA2_CLS_PROMPT"]["prompt"]
                     model = AutoModelForCausalLM.from_pretrained(model_name, **kwargs,**device_map)
                     tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False)
                     tokenizer.padding_side = "left"
                 else:
-                    model = AutoModelForScore.from_pretrained(model_name, **kwargs,**device_map)
-                    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False)
-                    tokenizer.padding_side = "right"
+                    raise NotImplementedError()
+
                 if not tokenizer.pad_token:
                     tokenizer.pad_token = tokenizer.eos_token
                 self.model = model
                 self.tokenizer= tokenizer
+                self.model_name = model_name
 
-            def _reward_run_batch(self,batch,device):
+            def _reward_run_batch_beaver(self,batch,device):
                 input_ids = self.tokenizer(batch, return_tensors='pt',padding= True).to(device)
                 outputs = self.model(**input_ids).end_scores
+                outputs = outputs.view(-1).cpu().tolist()
+                return outputs
+            
+            def _reward_run_batch_harmbench(self,batch,device):
+                input_ids = self.tokenizer(batch, return_tensors='pt',padding= True).to(device)
+                outputs = self.model.generate(**input_ids,max_new_tokens = 1)
+                outputs = self.tokenizer.batch_decode(outputs[:,input_ids["input_ids"].shape[-1]:])
                 return outputs
 
-            def _reward_run(self, q_and_p_s, ans_s, device):
+            def _reward_run(self, q_and_p_s, ans_s, device,func):
                 outputs_l = []
                 batch_size = self.batch_size
                 for i in range(0,len(q_and_p_s),batch_size):
-                    
                     batch_inputs = q_and_p_s[i: i +batch_size]
                     batch_outputs = ans_s[i: i +batch_size]
                     batch = [self.template.format(model_input = batch_inputs[index], model_output = batch_outputs[index]) for index in range(len(batch_inputs))]
-                    
-                    outputs_l.append(self._reward_run_batch(batch,device))
-                    # except:
-                    #     print("run one by one for _reward_run")
-                    #     single_outputs_l = []
-                    #     for single_batch in batch:
-                    #         single_outputs_l.append(self._reward_run_batch(single_batch,device))
-                    #     outputs_l.extend(single_outputs_l)        
-                return torch.cat(outputs_l,dim = 0).view(-1),outputs_l
+                    # print(batch[0])
+                    # print("*"*30)
+                    # print(batch[1])
+                    outputs_l.extend(func(batch,device))      
+                return outputs_l
             
-            def _reward_run_debug(self, q_and_p_s, ans_s, device):
-                # outputs_l = []
-                # batch_size = self.batch_size
-                # for i in range(0,len(q_and_p_s),batch_size):
-                #     batch_inputs = q_and_p_s[i: i +batch_size]
-                #     batch_outputs = ans_s[i: i +batch_size]
-                #     batch = [self.template.format(model_input = batch_inputs[index], model_output = batch_outputs[index]) for index in range(len(batch_inputs))]
-                #     try:
-                #         input_ids = self.tokenizer(batch, return_tensors='pt',padding= True).to(device)
-                #         outputs = self.model(**input_ids).logits[:,-1,0].unsqueeze(-1)
-                #         outputs_l.append(outputs)
-                #     except:
-                #         print("run one by one")
-                #         single_outputs_l = []
-                #         for single_batch in batch:
-                #             input_ids = self.tokenizer(single_batch, return_tensors='pt',padding= True).to(device)
-                #             outputs = self.model(**input_ids).logits[:,0,0].unsqueeze(-1)
-                #             single_outputs_l.append(outputs)
-                #         outputs_l.extend(single_outputs_l)        
-                # return torch.cat(outputs_l,dim = 0).view(-1),outputs_l
-                pass
             
             def reward_run(self, q_and_p_s, ans_s, device, mode):
                 # "q_and_p_s are 'harmful input + prompt' question + prompt, ans_s are cost_lm's response"
-                if self.config.debug:
-                    scores, _ = self._reward_run_debug(q_and_p_s, ans_s, device)
+
+                if "beaver" in self.model_name.lower():
+                    scores = self._reward_run(q_and_p_s, ans_s, device,self._reward_run_batch_beaver)
+                elif "harmbench" in self.model_name.lower():
+                    scores = self._reward_run(q_and_p_s, ans_s, device,self._reward_run_batch_harmbench)
                 else:
-                    scores, _ = self._reward_run(q_and_p_s, ans_s, device)
+                    raise NotImplementedError()
 
                 return scores
 
@@ -148,8 +141,10 @@ def create_targetlm(config):
                 self.original_template = config.template
                 if config.system_message:
                     self.template = self.original_template.format(system_message = config.system_message, input = "{input}", prompt = "{prompt}")
+                    self.system_message = config.system_message
                 else:
                     self.template = self.original_template.format(input = "{input}", prompt = "{prompt}")
+                    self.system_message = ""
                 self.ppl_template = config.ppl_template
                 self.batch_size = config.batch_size
                 kwargs = check_torch_dtype(config)
@@ -164,6 +159,8 @@ def create_targetlm(config):
                 self.gen_kwargs = {"pad_token_id":self.tokenizer.pad_token_id, "eos_token_id":self.tokenizer.eos_token_id, "bos_token_id":self.tokenizer.bos_token_id}
             
             def replace_sys_msg(self,sys_mes):
+                self.system_message = sys_mes
+
                 if self.config.system_message:
                     self.template = self.original_template.format(system_message = sys_mes, input = "{input}", prompt = "{prompt}")
                 else:
