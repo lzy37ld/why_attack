@@ -32,6 +32,7 @@ def check_torch_dtype(config):
 
 
 # 为什么我不用deepspeed，本质上可以用，但是我一个gpu的vram太小了，所以多放几个model，不一定放得下，还不如分开。。。
+
 def create_reward(config):
         
     if os.environ.get("RANK", "0") == "0":

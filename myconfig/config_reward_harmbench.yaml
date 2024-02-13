@@ -7,16 +7,17 @@ hydra:
 
 defaults:
   # # reward_lm: ???
-  - reward_lm: harmbench-13b
+  - reward_lm: gpt4-0613
 
 
 # path: null
 path: ???
 batch_size: 4
 
-
 # if only reward the instances that are classified as harmful before
-only_prev_harm: true
+only_prev_harms:
+  - beaver
+  - harmbench
 
 
 
