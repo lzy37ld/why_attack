@@ -33,9 +33,8 @@ do
 			s_p_t_dir="'/fs/ess/PAA0201/lzy37ld/why_attack/ckpt/prompter_victim=${victim_model}_prompt_type=q_p_model_name=llama2-base_sample_way_and_n_sample=${sample_way_and_n_sample}/final-${split}'"
 		fi
 
-		python evaluate_for_test_prompter.py target_lm=gpt3.5 force_append=true prompt_way=own data_args.split=${split} ppl=${ppl} s_p_t_dir=$s_p_t_dir prompt_own_list=config_GCG_suffix prompt_own_list_name=gpt_low
-		python evaluate_for_test_prompter.py target_lm=gpt3.5 force_append=true prompt_way=own data_args.split=${split} ppl=${ppl} s_p_t_dir=$s_p_t_dir prompt_own_list=config_GCG_suffix prompt_own_list_name=gpt_all
-		python evaluate_for_test_prompter.py target_lm=gpt4 force_append=true prompt_way=own data_args.split=${split} ppl=${ppl} s_p_t_dir=$s_p_t_dir prompt_own_list=config_GCG_suffix prompt_own_list_name=gpt_low
-		python evaluate_for_test_prompter.py target_lm=gpt4 force_append=true prompt_way=own data_args.split=${split} ppl=${ppl} s_p_t_dir=$s_p_t_dir prompt_own_list=config_GCG_suffix prompt_own_list_name=gpt_all
+		python evaluate_for_test_prompter.py target_lm=gpt3.5_0125 force_append=true prompt_way=own data_args.split=${split} ppl=${ppl} s_p_t_dir=$s_p_t_dir prompt_own_list=config_GCG_suffix prompt_own_list_name=gpt_low
+		python evaluate_for_test_prompter.py target_lm=gpt3.5_0125 force_append=true prompt_way=own data_args.split=${split} ppl=${ppl} s_p_t_dir=$s_p_t_dir prompt_own_list=config_GCG_suffix prompt_own_list_name=gpt_all
+		
 	done
 done

@@ -125,7 +125,8 @@ do
 		
 		# python evaluate_for_test_prompter.py target_lm=gpt3.5_0125 reward_lm=beaver-7b "prompter_lm.model_name=$model_name" "prompter_lm.show_name=$show_name" data_args.split=${split} ppl=${ppl} s_p_t_dir=$s_p_t_dir generation_configs@prompter_lm=top_p prompter_lm.generation_configs.num_return_sequences=2 batch_size=4 prompter_lm.batch_size=4 target_lm.batch_size=4 reward_lm.batch_size=4 w_affirm_suffix=true
 		
-		python evaluate_for_test_prompter.py target_lm=gpt3.5_0125 "prompter_lm.model_name=$model_name" "prompter_lm.show_name=$show_name" data_args.split=${split} ppl=${ppl} s_p_t_dir=$s_p_t_dir generation_configs@prompter_lm=top_p prompter_lm.generation_configs.num_return_sequences=400 batch_size=2 prompter_lm.batch_size=4 target_lm.batch_size=4 reward_lm.batch_size=2 w_affirm_suffix=true
+		python evaluate_for_test_prompter.py target_lm=gpt3.5_0125 "prompter_lm.model_name=$model_name" "prompter_lm.show_name=$show_name" data_args.split=${split} ppl=${ppl} s_p_t_dir=$s_p_t_dir generation_configs@prompter_lm=top_p prompter_lm.generation_configs.num_return_sequences=400 batch_size=2 prompter_lm.batch_size=4 target_lm.batch_size=4 reward_lm.batch_size=2
+		python evaluate_for_test_prompter.py target_lm=gpt3.5_0125 "prompter_lm.model_name=$model_name" "prompter_lm.show_name=$show_name" data_args.split=${split} ppl=${ppl} s_p_t_dir=$s_p_t_dir generation_configs@prompter_lm=top_p prompter_lm.generation_configs.num_return_sequences=250 batch_size=2 prompter_lm.batch_size=4 target_lm.batch_size=4 reward_lm.batch_size=2
 		
 		
 		

@@ -16,7 +16,7 @@ import time
 from torch.utils.data import Dataset
 from itertools import chain, repeat
 import random
-set_seed(42)
+
 
 
 fail_reward = {
@@ -146,9 +146,7 @@ def do_reps(
 
 @hydra.main(config_path="./myconfig", config_name="config_prompter_evaluate")
 def main(config: "DictConfig"):
-
-
-
+    set_seed(config.seed)
     print(config.reward_lm.model_name)
     
     start_time = time.time()
@@ -161,7 +159,16 @@ def main(config: "DictConfig"):
     s_p_t_dir = config.s_p_t_dir
     if config.prompt_way == "prompter":
         promptway_name = config.prompt_way + "_" + config.data_args.prompt_type
+
         decode_way = f"decode_{config.prompter_lm.generation_configs.name}"
+        if config.prompter_lm.generation_configs.name == "top_p":
+            if config.prompter_lm.generation_configs.top_p != 0.9:
+                decode_way += f"_{config.prompter_lm.generation_configs.top_p}"
+
+        if config.prompter_lm.generation_configs.name == "top_k":
+            if config.prompter_lm.generation_configs.top_k != 50:
+                decode_way += f"_{config.prompter_lm.generation_configs.top_k}"
+
         if config.prompter_lm.generation_configs.num_return_sequences > 1:
             decode_way += f"_numreturn_{config.prompter_lm.generation_configs.num_return_sequences}"
             if config.prompt_concat > 1:
@@ -169,6 +176,9 @@ def main(config: "DictConfig"):
         if config.prompter_lm.generation_configs.repetition_penalty > 1:
             decode_way += f"_rep_{config.prompter_lm.generation_configs.repetition_penalty}"
         s_p_t_dir = os.path.join(s_p_t_dir,f"{config.data_args.split}|prompter_{config.prompter_lm.show_name}|{decode_way}|promptway_{promptway_name}")
+
+        if config.seed != 42:
+            s_p_t_dir += f"_seed_{config.seed}"
 
         if config.q_rep!=1:
             s_p_t_dir += "|" + f"q_rep_{config.q_rep}"
@@ -256,11 +266,13 @@ def main(config: "DictConfig"):
         prompter_lm_fn = create_prompterlm(config)
         evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,processed_data,config,fp)
     elif config.prompt_way == "own":
-        print('len(config.prompt_own_list[config.prompt_own_list_name])',len(config.prompt_own_list[config.prompt_own_list_name]))
-        for own_prompt in config.prompt_own_list[config.prompt_own_list_name]:
-            config.own_prompt = own_prompt
-            assert config.own_prompt is not None
-            evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,processed_data,config,fp)
+        with open(config.prompt_own_list) as f:
+            prompt_own_list = json.load(f)
+
+        print('len(prompt_own_list[config.prompt_own_list_name])',len(prompt_own_list[config.prompt_own_list_name]))
+        for own_prompt in prompt_own_list[config.prompt_own_list_name]:
+            print('own_prompt:\n',own_prompt)
+            evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,processed_data,config,fp,own_prompt)
     fp.close()
     end_time = time.time()
 
@@ -272,7 +284,7 @@ def main(config: "DictConfig"):
 
 
 @torch.no_grad()
-def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,processed_data,config,fp):
+def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,processed_data,config,fp,own_prompt = None):
     prompt_template = PROMPT_DICT[config.data_args.prompt_type]
     progress_keys = tqdm(processed_data, total=len(processed_data),desc="keys iteration")
     
@@ -312,7 +324,7 @@ def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,
             if config.data_args.prompt_type == "q_p":
                 prompter_lm_inputs = [prompt_template.format(q = for_promptlm_q_s[index]) for index in range(len(for_promptlm_q_s))]
             prompt_lm_start_time = time.time()
-            p_s = prompter_lm_fn(prompter_lm_inputs)
+            p_s = prompter_lm_fn.get_prompter_lm_generation(prompter_lm_inputs)
             prompt_lm_end_time = time.time()
             print('prompt_lm_time for one query',round((prompt_lm_end_time - prompt_lm_start_time)/len(for_promptlm_q_s),2))
 
@@ -334,7 +346,8 @@ def evaluate_fn(target_model_tokenizer,reward_lm_fn,target_lm_fn,prompter_lm_fn,
 
         elif config.prompt_way == "own":
             prompter_lm_inputs = [None] * len(for_promptlm_q_s)
-            p_s = [config.own_prompt] * len(for_promptlm_q_s)
+            assert own_prompt is not None
+            p_s = [own_prompt] * len(for_promptlm_q_s)
             print('config.prompt_way == "own"')
             print(p_s[0])
             repeat_prompter_lm_inputs = prompter_lm_inputs

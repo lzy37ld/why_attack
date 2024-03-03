@@ -328,19 +328,45 @@ def create_prompterlm(config):
                         print(self.tokenizer.decode(self.tokenizer.encode(batch[0])))
                         print("Add special tokens should be True")
                     
-                    outputs_l.extend(self._prompterlm_run_batch(batch,device))
-                    # except:
-                    #     print("run one by one for _prompterlm_run")
-                    #     single_outputs_l = []
-                    #     for single_batch in batch:
-                    #         single_outputs_l.extend(self._prompterlm_run_batch(single_batch,device))
-                    #     outputs_l.extend(single_outputs_l)        
+                    outputs_l.extend(self._prompterlm_run_batch(batch,device))      
                 return outputs_l
             
             def prompterlm_run(self, q_s, device):
                 generations = self._prompterlm_run(q_s, device)
 
                 return generations
+            
+            # get socre
+            def _prob_run_batch(self,batch,device):
+                input_ids = self.tokenizer(batch, return_tensors='pt',padding= True).to(device)
+                attention_mask = input_ids.attention_mask
+                labels = copy.deepcopy(input_ids.input_ids)
+                labels = torch.where(attention_mask == 0, torch.tensor(-100), labels)
+                logits = self.model(**input_ids).logits
+                shifted_labels = labels[...,1:].contiguous()
+                shifted_logits = logits[...,:-1,:].contiguous()
+                shifted_logits = shifted_logits.permute(0,2,1)
+                loss = loss_fct(shifted_logits, shifted_labels)
+                loss = cal_loss_avg(loss)
+                ppl = torch.exp(loss)
+                return ppl.detach().cpu().tolist()
+            
+            def prob_run(self,q_s,p_s,device):
+                
+                pass
+                
+
+            @torch.no_grad()
+            def get_prompter_lm_generation(self,q_s,num_return_sequences = -1):
+                # q_s : questions  p_s:prompts
+
+                generation_configs = config.prompter_lm.generation_configs
+                if num_return_sequences != -1:
+                    generation_configs.num_return_sequences = num_return_sequences
+                prompter_model.create_gen_config(generation_configs)
+                
+                generation = prompter_model.prompterlm_run(q_s,device = prompter_model_device)
+                return generation
             
 
         device_map = {"device_map":"auto"}
@@ -350,22 +376,12 @@ def create_prompterlm(config):
         prompter_model.eval()
         prompter_model.requires_grad_(False)
 
-        @torch.no_grad()
-        def get_prompter_lm_generation(q_s,num_return_sequences = -1):
-            # q_s : questions  p_s:prompts
 
-            generation_configs = config.prompter_lm.generation_configs
-            if num_return_sequences != -1:
-                generation_configs.num_return_sequences = num_return_sequences
-            prompter_model.create_gen_config(generation_configs)
-            
-            generation = prompter_model.prompterlm_run(q_s,device = prompter_model_device)
-            return generation
         
     else:
-        get_prompter_lm_generation = True
+        prompter_model = None
 
-    return get_prompter_lm_generation
+    return prompter_model
 
 
 

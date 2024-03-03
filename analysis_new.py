@@ -49,6 +49,7 @@ def main(args):
 			q_s_harm[line["q"]]["beaver_scores"].append(line["reward"])
 			q_s_harm[line["q"]]["harmbench_scores"].append(line["harmbench_reward"])
 			q_s_harm[line["q"]]["target_lm_generations"].append(line["target_lm_generation"])
+			q_s_harm[line["q"]]["p"].append(line["p"])
 
 			if args.include_gptscore:
 				gpt_scores.append(line["gpt4_reward"])
@@ -65,22 +66,25 @@ def main(args):
 
 
 	print('len(all_harms)',len(all_harms))
+	print(len([1 for _ in harmbench_scores if _ == "Yes"]))
 	
 	all_harms_over_qs = []
 	all_num_jbs_over_jbqs = []
 	q_ppl = []
 	print('len(q_s_harm)',len(q_s_harm))
 	for q in q_s_harm:
+		
+
 		if not args.include_gptscore:
 			q_harms = deter_if_harm_new(q_s_harm[q]["beaver_scores"],q_s_harm[q]["target_lm_generations"],q_s_harm[q]["harmbench_scores"],determine_way=args.determine_way)
 		else:
 			q_harms = deter_if_harm_new(q_s_harm[q]["beaver_scores"],q_s_harm[q]["target_lm_generations"],q_s_harm[q]["harmbench_scores"],gpt_scores = q_s_harm[q]["gpt_scores"],determine_way=args.determine_way)
 
-
-
 		if any(q_harms):
 			all_harms_over_qs.append(1)
-			all_num_jbs_over_jbqs.append(sum(q_harms))
+			num_of_jb_p_s = [q_s_harm[q]["p"][index] for index,_ in enumerate(q_harms) if _ > 0]
+			# print(num_of_jb_p_s)
+			all_num_jbs_over_jbqs.append(len(set(num_of_jb_p_s)))
 		else:
 			all_harms_over_qs.append(0)
 		if "ppl" in q_s_harm[q]:

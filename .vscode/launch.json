@@ -5,6 +5,19 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
+			"name": "plot generated data for loss",
+			"type": "debugpy",
+			"request": "launch",
+			"program": "${file}",
+			"console": "integratedTerminal",
+			"args": [
+				"evaluated_data_path_template=\"/fs/ess/PAA0201/lzy37ld/why_attack/data/s_p_t_evaluate/vicuna-7b-chat-v1.5|max_new_tokens_60/{offset}|promptway_own|targetlm_do_sample_False|append_label_length_-1.jsonl\"",
+				"evaluated_model=vicuna-7b",
+				"+interval=64000"
+			]
+
+		},
+		{
 			"name": "torchrun trainer ascend",
 			"type": "python",
 			"request": "launch",
